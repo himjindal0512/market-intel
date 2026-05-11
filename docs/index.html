@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Market Intel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0e14; color: #e6edf3; padding: 30px 20px; max-width: 1100px; margin: 0 auto; }
+
+/* Header */
+.header { text-align: center; margin-bottom: 32px; }
+.header h1 { font-size: 28px; margin-bottom: 6px; background: linear-gradient(135deg, #58a6ff, #3fb950); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.header p { color: #6e7681; font-size: 14px; }
+
+/* Cards */
+.card { background: #151b23; border: 1px solid #1f2937; border-radius: 14px; padding: 22px; margin-bottom: 20px; box-shadow: 0 4px 24px rgba(0,0,0,0.3); }
+
+/* Insights */
+.insight-box h3 { font-size: 15px; color: #e6edf3; margin-bottom: 12px; }
+.insight-box p { color: #8b949e; line-height: 1.8; margin-bottom: 6px; font-size: 13px; }
+.highlight { color: #f0883e; font-weight: 600; }
+.green { color: #3fb950; font-weight: 600; }
+.red { color: #f85149; font-weight: 600; }
+
+/* Legend */
+.legend { font-size: 12px; color: #6e7681; line-height: 2; padding: 16px 20px; }
+.legend strong { color: #8b949e; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+.legend-row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* Tabs */
+.tab-bar { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.tab { padding: 9px 18px; border-radius: 8px; cursor: pointer; background: #1c2128; color: #6e7681; border: 1px solid transparent; font-size: 13px; font-weight: 500; transition: all 0.2s; }
+.tab:hover { color: #e6edf3; border-color: #30363d; }
+.tab.active { background: #21262d; color: #e6edf3; border-color: #30363d; }
+
+/* Table */
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 10px 14px; color: #6e7681; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #1f2937; cursor: pointer; user-select: none; transition: color 0.2s; }
+th:hover { color: #e6edf3; }
+th .sort-arrow { margin-left: 4px; font-size: 9px; }
+td { padding: 10px 14px; border-bottom: 1px solid #1a1f26; font-size: 13px; }
+tr { transition: background 0.15s; }
+tr:hover { background: #1c2128; cursor: pointer; }
+.positive { color: #3fb950; }
+.negative { color: #f85149; }
+.neutral { color: #6e7681; }
+
+/* Signal tags */
+.signal-tag { display: inline-block; padding: 3px 9px; border-radius: 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.3px; }
+.signal-early { background: rgba(240,136,62,0.12); color: #f0883e; }
+.signal-confirming { background: rgba(63,185,80,0.12); color: #3fb950; }
+.signal-selling { background: rgba(248,81,73,0.12); color: #f85149; }
+
+/* Ticker section */
+.ticker-section { margin-top: 28px; }
+.ticker-section h3 { color: #e6edf3; margin-bottom: 14px; font-size: 15px; }
+.search-box { display: flex; gap: 10px; }
+.search-box input { flex: 1; padding: 11px 16px; border-radius: 8px; border: 1px solid #1f2937; background: #0a0e14; color: #e6edf3; font-size: 15px; max-width: 320px; transition: border-color 0.2s; }
+.search-box input:focus { outline: none; border-color: #58a6ff; }
+.search-box button { padding: 11px 22px; border-radius: 8px; border: none; background: linear-gradient(135deg, #238636, #2ea043); color: white; font-size: 14px; font-weight: 600; cursor: pointer; transition: transform 0.1s; }
+.search-box button:hover { transform: scale(1.02); }
+.search-box button:active { transform: scale(0.98); }
+
+/* Ticker result */
+.ticker-result { margin-top: 18px; }
+.ticker-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+.ticker-header h2 { font-size: 22px; }
+.ticker-header .price { font-size: 18px; color: #6e7681; }
+.verdict { color: #8b949e; margin-bottom: 16px; line-height: 1.5; font-size: 13px; }
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 18px; }
+.metric { background: #0a0e14; border-radius: 10px; padding: 12px; border: 1px solid #1f2937; }
+.metric-label { font-size: 10px; color: #6e7681; text-transform: uppercase; letter-spacing: 0.5px; }
+.metric-value { font-size: 18px; font-weight: 700; margin-top: 4px; }
+.vol-chart-title { color: #6e7681; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+.day-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.day-date { width: 42px; font-size: 11px; color: #6e7681; }
+.day-bar { height: 16px; border-radius: 4px; min-width: 2px; transition: width 0.3s; }
+.day-val { font-size: 11px; min-width: 55px; }
+.loading { color: #6e7681; padding: 20px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>📡 Market Intelligence</h1>
+    <p>Volume-based signal detection · S&P 500 · Updated daily</p>
+</div>
+
+<div class="card insight-box" id="insights"></div>
+
+<div class="card" style="padding:14px 20px;">
+    <div class="tab-bar">
+        <button class="tab active" onclick="showTab(this,'signals')">🎯 Signals</button>
+        <button class="tab" onclick="showTab(this,'early')">🟡 Accumulation</button>
+        <button class="tab" onclick="showTab(this,'confirming')">🟢 Breakouts</button>
+        <button class="tab" onclick="showTab(this,'selling')">🔴 Distribution</button>
+    </div>
+    <div id="dashboard"></div>
+</div>
+
+<div class="card legend">
+    <strong>How to read this</strong><br>
+    <div class="legend-row"><div class="legend-dot" style="background:#f0883e"></div> <span><b style="color:#f0883e">Signals</b> — Unusual volume for 3+ days straight. Not noise — real institutional activity.</span></div>
+    <div class="legend-row"><div class="legend-dot" style="background:#f0883e"></div> <span><b style="color:#f0883e">Accumulation</b> — Volume up, price flat. Someone buying quietly before a move. Best early entries.</span></div>
+    <div class="legend-row"><div class="legend-dot" style="background:#3fb950"></div> <span><b style="color:#3fb950">Breakouts</b> — Volume + price both up. Confirmed trend. Check 1M to see if still early.</span></div>
+    <div class="legend-row"><div class="legend-dot" style="background:#f85149"></div> <span><b style="color:#f85149">Distribution</b> — Volume up, price down. Institutions exiting. Avoid.</span></div>
+    <br>
+    <strong>Status Tags</strong><br>
+    <div class="legend-row"><span class="signal-tag signal-early">EARLY</span> <span>Volume spike but price flat — potential early entry, research the catalyst</span></div>
+    <div class="legend-row"><span class="signal-tag signal-confirming">BREAKOUT</span> <span>Price up 5%+ with volume — move confirmed, assess if still room to run</span></div>
+    <div class="legend-row"><span class="signal-tag signal-selling">SELLING</span> <span>Price down 5%+ with volume — smart money leaving, don't catch the knife</span></div>
+    <br>
+    <strong>Trend</strong><br>
+    <span>📈 growing = volume increasing daily (strongest) · ➡️ steady = consistent · 📉 fading = dying down</span>
+</div>
+
+<div class="card ticker-section">
+    <h3>🔍 Ticker Lookup</h3>
+    <div class="search-box">
+        <input type="text" id="ticker-input" placeholder="Search any ticker (e.g. INTC, NVDA, TSLA)" onkeydown="if(event.key==='Enter')searchTicker()">
+        <button onclick="searchTicker()">Analyze</button>
+    </div>
+    <div id="ticker-result"></div>
+</div>
+
+<script>
+let data = {};
+
+async function loadDashboard() {
+    data = {"alerts": [{"ticker": "ZTS", "price": 76.67, "vol_spike": 295.7, "price_1w": -32.0, "price_1m": -34.7, "status": "\ud83d\udd34 SELLING"}, {"ticker": "VEEV", "price": 159.33, "vol_spike": 281.1, "price_1w": -6.4, "price_1m": 5.2, "status": "\ud83d\udd34 SELLING"}, {"ticker": "ANET", "price": 136.43, "vol_spike": 199.6, "price_1w": -21.0, "price_1m": -7.4, "status": "\ud83d\udd34 SELLING"}, {"ticker": "DVA", "price": 198.93, "vol_spike": 186.6, "price_1w": 29.1, "price_1m": 32.6, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "J", "price": 117.02, "vol_spike": 183.6, "price_1w": -10.5, "price_1m": -4.8, "status": "\ud83d\udd34 SELLING"}, {"ticker": "AKAM", "price": 153.01, "vol_spike": 170.4, "price_1w": 44.6, "price_1m": 67.5, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "TECH", "price": 47.42, "vol_spike": 165.8, "price_1w": -13.4, "price_1m": -14.6, "status": "\ud83d\udd34 SELLING"}, {"ticker": "COR", "price": 259.7, "vol_spike": 161.7, "price_1w": -14.5, "price_1m": -19.1, "status": "\ud83d\udd34 SELLING"}, {"ticker": "CDW", "price": 102.54, "vol_spike": 154.5, "price_1w": -24.2, "price_1m": -18.3, "status": "\ud83d\udd34 SELLING"}, {"ticker": "DDOG", "price": 202.32, "vol_spike": 144.3, "price_1w": 37.9, "price_1m": 92.0, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "MCK", "price": 725.17, "vol_spike": 142.5, "price_1w": -10.2, "price_1m": -16.2, "status": "\ud83d\udd34 SELLING"}, {"ticker": "TPR", "price": 133.34, "vol_spike": 136.8, "price_1w": -4.6, "price_1m": -11.3, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "SMCI", "price": 33.52, "vol_spike": 129.3, "price_1w": 20.1, "price_1m": 32.7, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "ETR", "price": 112.97, "vol_spike": 126.2, "price_1w": -2.9, "price_1m": -2.5, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "APTV", "price": 55.41, "vol_spike": 119.8, "price_1w": -6.9, "price_1m": -7.1, "status": "\ud83d\udd34 SELLING"}, {"ticker": "GLW", "price": 207.39, "vol_spike": 114.8, "price_1w": 29.7, "price_1m": 21.1, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "VTRS", "price": 16.92, "vol_spike": 113.5, "price_1w": 11.3, "price_1m": 25.6, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "SWKS", "price": 70.13, "vol_spike": 113.2, "price_1w": 1.9, "price_1m": 24.4, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "NWS", "price": 31.17, "vol_spike": 107.3, "price_1w": 4.5, "price_1m": 10.3, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "PODD", "price": 154.17, "vol_spike": 104.8, "price_1w": -10.0, "price_1m": -21.7, "status": "\ud83d\udd34 SELLING"}, {"ticker": "MSI", "price": 392.17, "vol_spike": 104.7, "price_1w": -10.4, "price_1m": -9.6, "status": "\ud83d\udd34 SELLING"}, {"ticker": "MRNA", "price": 52.88, "vol_spike": 102.6, "price_1w": 11.8, "price_1m": 3.8, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "HII", "price": 317.75, "vol_spike": 101.8, "price_1w": -12.6, "price_1m": -19.4, "status": "\ud83d\udd34 SELLING"}, {"ticker": "TRMB", "price": 58.04, "vol_spike": 100.7, "price_1w": -15.3, "price_1m": -10.4, "status": "\ud83d\udd34 SELLING"}, {"ticker": "MTD", "price": 1078.53, "vol_spike": 99.9, "price_1w": -14.4, "price_1m": -18.6, "status": "\ud83d\udd34 SELLING"}, {"ticker": "APP", "price": 478.42, "vol_spike": 98.0, "price_1w": 0.7, "price_1m": 22.2, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "QCOM", "price": 237.53, "vol_spike": 97.2, "price_1w": 41.1, "price_1m": 85.5, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "LDOS", "price": 127.68, "vol_spike": 96.9, "price_1w": -14.2, "price_1m": -16.5, "status": "\ud83d\udd34 SELLING"}, {"ticker": "FIS", "price": 42.36, "vol_spike": 96.2, "price_1w": -10.4, "price_1m": -2.3, "status": "\ud83d\udd34 SELLING"}, {"ticker": "IFF", "price": 78.75, "vol_spike": 95.3, "price_1w": 12.4, "price_1m": 8.6, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "NWSA", "price": 27.01, "vol_spike": 95.3, "price_1w": 4.7, "price_1m": 10.3, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "HSIC", "price": 68.99, "vol_spike": 94.9, "price_1w": -4.2, "price_1m": -8.4, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "RVTY", "price": 98.95, "vol_spike": 94.8, "price_1w": 14.4, "price_1m": 10.3, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "DVN", "price": 46.73, "vol_spike": 94.6, "price_1w": -8.8, "price_1m": -2.2, "status": "\ud83d\udd34 SELLING"}, {"ticker": "AXON", "price": 394.36, "vol_spike": 93.9, "price_1w": 0.2, "price_1m": 14.0, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "PTC", "price": 145.92, "vol_spike": 93.1, "price_1w": 5.6, "price_1m": 9.4, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "DASH", "price": 157.33, "vol_spike": 91.3, "price_1w": -8.8, "price_1m": 3.1, "status": "\ud83d\udd34 SELLING"}, {"ticker": "DTE", "price": 142.43, "vol_spike": 90.1, "price_1w": -2.9, "price_1m": -4.8, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "WAT", "price": 348.07, "vol_spike": 89.5, "price_1w": 15.3, "price_1m": 8.8, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "CCL", "price": 25.44, "vol_spike": 89.1, "price_1w": -0.9, "price_1m": -9.1, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "DIS", "price": 104.72, "vol_spike": 86.9, "price_1w": 3.4, "price_1m": 5.6, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "GEN", "price": 22.4, "vol_spike": 86.3, "price_1w": 14.1, "price_1m": 25.2, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "FTNT", "price": 115.44, "vol_spike": 82.4, "price_1w": 29.4, "price_1m": 50.5, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "EXPE", "price": 221.46, "vol_spike": 79.3, "price_1w": -10.2, "price_1m": -2.9, "status": "\ud83d\udd34 SELLING"}, {"ticker": "APH", "price": 122.47, "vol_spike": 78.0, "price_1w": -13.2, "price_1m": -13.0, "status": "\ud83d\udd34 SELLING"}, {"ticker": "TTD", "price": 21.52, "vol_spike": 75.4, "price_1w": -10.7, "price_1m": 7.1, "status": "\ud83d\udd34 SELLING"}, {"ticker": "POOL", "price": 184.77, "vol_spike": 75.3, "price_1w": -9.1, "price_1m": -14.0, "status": "\ud83d\udd34 SELLING"}, {"ticker": "UBER", "price": 76.15, "vol_spike": 75.0, "price_1w": 3.0, "price_1m": 8.0, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "FISV", "price": 54.39, "vol_spike": 74.6, "price_1w": -13.4, "price_1m": -3.0, "status": "\ud83d\udd34 SELLING"}, {"ticker": "VST", "price": 152.05, "vol_spike": 74.4, "price_1w": -5.5, "price_1m": -1.7, "status": "\ud83d\udd34 SELLING"}, {"ticker": "DOC", "price": 19.76, "vol_spike": 72.7, "price_1w": 21.3, "price_1m": 18.7, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "ROK", "price": 456.66, "vol_spike": 72.7, "price_1w": 14.1, "price_1m": 15.3, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "ABNB", "price": 137.05, "vol_spike": 72.2, "price_1w": -1.3, "price_1m": 6.3, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "DD", "price": 50.58, "vol_spike": 70.6, "price_1w": 11.4, "price_1m": 7.0, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "SOLV", "price": 74.12, "vol_spike": 70.1, "price_1w": 9.9, "price_1m": 12.7, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "CTVA", "price": 82.83, "vol_spike": 68.4, "price_1w": 1.4, "price_1m": -1.2, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "MNST", "price": 86.41, "vol_spike": 67.5, "price_1w": 14.9, "price_1m": 14.1, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "PYPL", "price": 45.07, "vol_spike": 66.8, "price_1w": -10.6, "price_1m": -0.4, "status": "\ud83d\udd34 SELLING"}, {"ticker": "WYNN", "price": 99.37, "vol_spike": 66.5, "price_1w": -3.9, "price_1m": -4.5, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "EVRG", "price": 83.43, "vol_spike": 65.4, "price_1w": 1.6, "price_1m": -0.2, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "HWM", "price": 273.58, "vol_spike": 64.4, "price_1w": 14.2, "price_1m": 8.3, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "ETN", "price": 419.0, "vol_spike": 63.8, "price_1w": -0.5, "price_1m": 4.3, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "ROST", "price": 214.55, "vol_spike": 63.2, "price_1w": -5.1, "price_1m": -3.0, "status": "\ud83d\udd34 SELLING"}, {"ticker": "TKO", "price": 184.5, "vol_spike": 63.0, "price_1w": -0.8, "price_1m": -6.5, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "COHR", "price": 379.69, "vol_spike": 61.1, "price_1w": 15.1, "price_1m": 23.5, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "FOXA", "price": 67.72, "vol_spike": 59.3, "price_1w": 8.6, "price_1m": 11.0, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "IT", "price": 153.8, "vol_spike": 59.0, "price_1w": 4.1, "price_1m": 7.0, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "JBL", "price": 365.24, "vol_spike": 58.9, "price_1w": 7.2, "price_1m": 21.9, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "XYZ", "price": 73.17, "vol_spike": 58.5, "price_1w": 1.8, "price_1m": 17.6, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "AES", "price": 14.35, "vol_spike": 58.3, "price_1w": 0.5, "price_1m": 1.0, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "MCD", "price": 274.6, "vol_spike": 58.0, "price_1w": -3.3, "price_1m": -10.2, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "GPN", "price": 68.77, "vol_spike": 57.7, "price_1w": -4.2, "price_1m": 5.1, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "JKHY", "price": 143.65, "vol_spike": 56.6, "price_1w": -5.8, "price_1m": -2.4, "status": "\ud83d\udd34 SELLING"}, {"ticker": "MCHP", "price": 99.03, "vol_spike": 56.2, "price_1w": 3.9, "price_1m": 38.4, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "MU", "price": 795.33, "vol_spike": 55.0, "price_1w": 38.0, "price_1m": 89.1, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "EPAM", "price": 97.35, "vol_spike": 54.1, "price_1w": -12.0, "price_1m": -20.5, "status": "\ud83d\udd34 SELLING"}, {"ticker": "ADM", "price": 79.84, "vol_spike": 52.9, "price_1w": 4.7, "price_1m": 14.5, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "LITE", "price": 1053.09, "vol_spike": 52.7, "price_1w": 7.9, "price_1m": 17.4, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "CAH", "price": 182.5, "vol_spike": 52.1, "price_1w": -7.4, "price_1m": -15.3, "status": "\ud83d\udd34 SELLING"}, {"ticker": "JCI", "price": 141.78, "vol_spike": 51.6, "price_1w": -1.8, "price_1m": -0.5, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "TJX", "price": 148.91, "vol_spike": 49.2, "price_1w": -3.7, "price_1m": -7.9, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "CVS", "price": 92.22, "vol_spike": 47.3, "price_1w": 12.4, "price_1m": 17.3, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "EA", "price": 200.22, "vol_spike": 47.2, "price_1w": -0.8, "price_1m": -1.2, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "CPAY", "price": 341.58, "vol_spike": 46.3, "price_1w": 9.9, "price_1m": 12.8, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "EMR", "price": 139.43, "vol_spike": 45.6, "price_1w": 2.9, "price_1m": -3.0, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "GWW", "price": 1226.09, "vol_spike": 45.0, "price_1w": 7.4, "price_1m": 4.6, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "ATO", "price": 182.13, "vol_spike": 44.6, "price_1w": -3.0, "price_1m": -4.3, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "BALL", "price": 57.72, "vol_spike": 44.1, "price_1w": -5.3, "price_1m": -7.3, "status": "\ud83d\udd34 SELLING"}, {"ticker": "LYV", "price": 163.0, "vol_spike": 43.3, "price_1w": 3.4, "price_1m": 1.5, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "GIS", "price": 33.8, "vol_spike": 42.8, "price_1w": -1.8, "price_1m": -5.0, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "CRL", "price": 168.46, "vol_spike": 42.4, "price_1w": -2.2, "price_1m": -4.1, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "BDX", "price": 143.15, "vol_spike": 41.8, "price_1w": -2.2, "price_1m": -7.2, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "CMI", "price": 702.66, "vol_spike": 41.6, "price_1w": 7.0, "price_1m": 14.0, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "O", "price": 62.36, "vol_spike": 41.6, "price_1w": -1.7, "price_1m": -1.8, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "OTIS", "price": 74.0, "vol_spike": 41.5, "price_1w": -2.5, "price_1m": -7.4, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "KVUE", "price": 17.17, "vol_spike": 41.4, "price_1w": 0.1, "price_1m": -1.0, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "AMD", "price": 458.79, "vol_spike": 40.9, "price_1w": 34.3, "price_1m": 87.2, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "ON", "price": 107.24, "vol_spike": 40.0, "price_1w": 5.1, "price_1m": 56.2, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "ES", "price": 67.24, "vol_spike": 38.1, "price_1w": -3.2, "price_1m": -3.9, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "HD", "price": 311.4, "vol_spike": 38.1, "price_1w": -0.3, "price_1m": -7.7, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "TSCO", "price": 30.25, "vol_spike": 38.1, "price_1w": -6.4, "price_1m": -32.8, "status": "\ud83d\udd34 SELLING"}, {"ticker": "APA", "price": 36.7, "vol_spike": 36.6, "price_1w": -12.7, "price_1m": -4.4, "status": "\ud83d\udd34 SELLING"}, {"ticker": "NXPI", "price": 305.99, "vol_spike": 36.5, "price_1w": 5.2, "price_1m": 49.7, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "KHC", "price": 23.26, "vol_spike": 34.5, "price_1w": 3.7, "price_1m": 0.9, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "DELL", "price": 247.04, "vol_spike": 34.1, "price_1w": 16.7, "price_1m": 39.4, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "PANW", "price": 213.66, "vol_spike": 33.8, "price_1w": 15.8, "price_1m": 37.2, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "HST", "price": 21.78, "vol_spike": 33.6, "price_1w": 4.4, "price_1m": 8.1, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "PFE", "price": 25.81, "vol_spike": 33.4, "price_1w": -0.2, "price_1m": -2.5, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "AMCR", "price": 40.2, "vol_spike": 33.0, "price_1w": 8.9, "price_1m": -2.3, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "RF", "price": 26.83, "vol_spike": 33.0, "price_1w": -3.0, "price_1m": -2.4, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "PWR", "price": 781.38, "vol_spike": 32.2, "price_1w": 3.2, "price_1m": 33.5, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "GILD", "price": 133.52, "vol_spike": 31.9, "price_1w": 0.6, "price_1m": -3.9, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "DG", "price": 104.63, "vol_spike": 31.8, "price_1w": -8.6, "price_1m": -9.6, "status": "\ud83d\udd34 SELLING"}, {"ticker": "WTW", "price": 249.72, "vol_spike": 31.5, "price_1w": -4.0, "price_1m": -10.9, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "DECK", "price": 96.65, "vol_spike": 31.4, "price_1w": -1.0, "price_1m": -10.4, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "AEP", "price": 130.7, "vol_spike": 31.2, "price_1w": -2.2, "price_1m": -3.4, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "TMO", "price": 452.6, "vol_spike": 31.2, "price_1w": -2.2, "price_1m": -8.8, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "CSCO", "price": 98.72, "vol_spike": 30.0, "price_1w": 6.6, "price_1m": 20.1, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "AMAT", "price": 443.62, "vol_spike": 29.7, "price_1w": 13.3, "price_1m": 11.0, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "KLAC", "price": 1845.19, "vol_spike": 29.6, "price_1w": 7.7, "price_1m": 6.2, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "SO", "price": 93.1, "vol_spike": 29.6, "price_1w": -3.0, "price_1m": -4.2, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "PEG", "price": 77.68, "vol_spike": 29.4, "price_1w": -3.4, "price_1m": -6.6, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "FOX", "price": 61.18, "vol_spike": 29.0, "price_1w": 9.1, "price_1m": 11.4, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "UHS", "price": 168.23, "vol_spike": 28.5, "price_1w": 1.3, "price_1m": -6.9, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "AIZ", "price": 244.14, "vol_spike": 28.4, "price_1w": 6.6, "price_1m": 11.3, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "HPQ", "price": 21.67, "vol_spike": 28.2, "price_1w": 4.2, "price_1m": 18.7, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "IQV", "price": 173.55, "vol_spike": 27.2, "price_1w": 7.8, "price_1m": 3.7, "status": "\ud83d\udfe2 CONFIRMING"}, {"ticker": "ED", "price": 106.21, "vol_spike": 26.8, "price_1w": -3.1, "price_1m": -6.5, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "RSG", "price": 197.73, "vol_spike": 26.7, "price_1w": -4.3, "price_1m": -7.9, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "BRO", "price": 55.35, "vol_spike": 26.6, "price_1w": -4.0, "price_1m": -15.0, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "CEG", "price": 299.69, "vol_spike": 26.2, "price_1w": -6.7, "price_1m": 4.6, "status": "\ud83d\udd34 SELLING"}, {"ticker": "PLTR", "price": 136.89, "vol_spike": 26.0, "price_1w": -6.3, "price_1m": 6.9, "status": "\ud83d\udd34 SELLING"}, {"ticker": "C", "price": 125.85, "vol_spike": 25.7, "price_1w": 0.2, "price_1m": 1.7, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "ALL", "price": 213.8, "vol_spike": 25.5, "price_1w": -2.8, "price_1m": 1.3, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "XEL", "price": 80.6, "vol_spike": 25.5, "price_1w": -0.7, "price_1m": -2.2, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "AJG", "price": 198.57, "vol_spike": 25.4, "price_1w": -4.1, "price_1m": -7.0, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "NCLH", "price": 16.58, "vol_spike": 25.1, "price_1w": -3.6, "price_1m": -16.9, "status": "\ud83d\udfe1 EARLY"}, {"ticker": "INTC", "price": 129.44, "vol_spike": 25.0, "price_1w": 35.1, "price_1m": 107.5, "status": "\ud83d\udfe2 CONFIRMING"}], "signals": [{"ticker": "VEEV", "price": 159.33, "vol_spike": 281.1, "price_1w": -6.4, "price_1m": 5.2, "status": "\ud83d\udd34 SELLING", "days_seen": 5, "avg_vol": 279.2}, {"ticker": "DVA", "price": 198.93, "vol_spike": 186.6, "price_1w": 29.1, "price_1m": 32.6, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 5, "avg_vol": 157.0}, {"ticker": "J", "price": 117.02, "vol_spike": 183.6, "price_1w": -10.5, "price_1m": -4.8, "status": "\ud83d\udd34 SELLING", "days_seen": 5, "avg_vol": 148.3}, {"ticker": "CDW", "price": 102.54, "vol_spike": 154.5, "price_1w": -24.2, "price_1m": -18.3, "status": "\ud83d\udd34 SELLING", "days_seen": 5, "avg_vol": 117.9}, {"ticker": "APTV", "price": 55.41, "vol_spike": 119.8, "price_1w": -6.9, "price_1m": -7.1, "status": "\ud83d\udd34 SELLING", "days_seen": 5, "avg_vol": 93.8}, {"ticker": "VTRS", "price": 16.92, "vol_spike": 113.5, "price_1w": 11.3, "price_1m": 25.6, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 5, "avg_vol": 81.2}, {"ticker": "SWKS", "price": 70.13, "vol_spike": 113.2, "price_1w": 1.9, "price_1m": 24.4, "status": "\ud83d\udfe1 EARLY", "days_seen": 5, "avg_vol": 110.0}, {"ticker": "NWS", "price": 31.17, "vol_spike": 107.3, "price_1w": 4.5, "price_1m": 10.3, "status": "\ud83d\udfe1 EARLY", "days_seen": 5, "avg_vol": 63.6}, {"ticker": "PODD", "price": 154.17, "vol_spike": 104.8, "price_1w": -10.0, "price_1m": -21.7, "status": "\ud83d\udd34 SELLING", "days_seen": 5, "avg_vol": 120.6}, {"ticker": "HII", "price": 317.75, "vol_spike": 101.8, "price_1w": -12.6, "price_1m": -19.4, "status": "\ud83d\udd34 SELLING", "days_seen": 5, "avg_vol": 96.7}, {"ticker": "QCOM", "price": 237.53, "vol_spike": 97.2, "price_1w": 41.1, "price_1m": 85.5, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 5, "avg_vol": 107.9}, {"ticker": "LDOS", "price": 127.68, "vol_spike": 96.9, "price_1w": -14.2, "price_1m": -16.5, "status": "\ud83d\udd34 SELLING", "days_seen": 5, "avg_vol": 103.5}, {"ticker": "NWSA", "price": 27.01, "vol_spike": 95.3, "price_1w": 4.7, "price_1m": 10.3, "status": "\ud83d\udfe1 EARLY", "days_seen": 5, "avg_vol": 65.4}, {"ticker": "HSIC", "price": 68.99, "vol_spike": 94.9, "price_1w": -4.2, "price_1m": -8.4, "status": "\ud83d\udfe1 EARLY", "days_seen": 5, "avg_vol": 112.0}, {"ticker": "RVTY", "price": 98.95, "vol_spike": 94.8, "price_1w": 14.4, "price_1m": 10.3, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 5, "avg_vol": 78.6}, {"ticker": "DTE", "price": 142.43, "vol_spike": 90.1, "price_1w": -2.9, "price_1m": -4.8, "status": "\ud83d\udfe1 EARLY", "days_seen": 5, "avg_vol": 118.4}, {"ticker": "WAT", "price": 348.07, "vol_spike": 89.5, "price_1w": 15.3, "price_1m": 8.8, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 5, "avg_vol": 70.6}, {"ticker": "CCL", "price": 25.44, "vol_spike": 89.1, "price_1w": -0.9, "price_1m": -9.1, "status": "\ud83d\udfe1 EARLY", "days_seen": 5, "avg_vol": 78.5}, {"ticker": "FISV", "price": 54.39, "vol_spike": 74.6, "price_1w": -13.4, "price_1m": -3.0, "status": "\ud83d\udd34 SELLING", "days_seen": 5, "avg_vol": 65.0}, {"ticker": "ROK", "price": 456.66, "vol_spike": 72.7, "price_1w": 14.1, "price_1m": 15.3, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 5, "avg_vol": 69.1}, {"ticker": "DD", "price": 50.58, "vol_spike": 70.6, "price_1w": 11.4, "price_1m": 7.0, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 5, "avg_vol": 65.6}, {"ticker": "SOLV", "price": 74.12, "vol_spike": 70.1, "price_1w": 9.9, "price_1m": 12.7, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 5, "avg_vol": 65.9}, {"ticker": "PYPL", "price": 45.07, "vol_spike": 66.8, "price_1w": -10.6, "price_1m": -0.4, "status": "\ud83d\udd34 SELLING", "days_seen": 5, "avg_vol": 56.0}, {"ticker": "ETN", "price": 419.0, "vol_spike": 63.8, "price_1w": -0.5, "price_1m": 4.3, "status": "\ud83d\udfe1 EARLY", "days_seen": 5, "avg_vol": 64.2}, {"ticker": "IT", "price": 153.8, "vol_spike": 59.0, "price_1w": 4.1, "price_1m": 7.0, "status": "\ud83d\udfe1 EARLY", "days_seen": 5, "avg_vol": 68.6}, {"ticker": "GPN", "price": 68.77, "vol_spike": 57.7, "price_1w": -4.2, "price_1m": 5.1, "status": "\ud83d\udfe1 EARLY", "days_seen": 5, "avg_vol": 74.8}, {"ticker": "ADM", "price": 79.84, "vol_spike": 52.9, "price_1w": 4.7, "price_1m": 14.5, "status": "\ud83d\udfe1 EARLY", "days_seen": 5, "avg_vol": 73.1}, {"ticker": "CAH", "price": 182.5, "vol_spike": 52.1, "price_1w": -7.4, "price_1m": -15.3, "status": "\ud83d\udd34 SELLING", "days_seen": 5, "avg_vol": 62.7}, {"ticker": "BALL", "price": 57.72, "vol_spike": 44.1, "price_1w": -5.3, "price_1m": -7.3, "status": "\ud83d\udd34 SELLING", "days_seen": 5, "avg_vol": 53.2}, {"ticker": "CMI", "price": 702.66, "vol_spike": 41.6, "price_1w": 7.0, "price_1m": 14.0, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 5, "avg_vol": 46.2}, {"ticker": "ON", "price": 107.24, "vol_spike": 40.0, "price_1w": 5.1, "price_1m": 56.2, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 5, "avg_vol": 49.2}, {"ticker": "HD", "price": 311.4, "vol_spike": 38.1, "price_1w": -0.3, "price_1m": -7.7, "status": "\ud83d\udfe1 EARLY", "days_seen": 5, "avg_vol": 49.2}, {"ticker": "TSCO", "price": 30.25, "vol_spike": 38.1, "price_1w": -6.4, "price_1m": -32.8, "status": "\ud83d\udd34 SELLING", "days_seen": 5, "avg_vol": 55.3}, {"ticker": "AMCR", "price": 40.2, "vol_spike": 33.0, "price_1w": 8.9, "price_1m": -2.3, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 5, "avg_vol": 39.1}, {"ticker": "PWR", "price": 781.38, "vol_spike": 32.2, "price_1w": 3.2, "price_1m": 33.5, "status": "\ud83d\udfe1 EARLY", "days_seen": 5, "avg_vol": 50.0}, {"ticker": "WTW", "price": 249.72, "vol_spike": 31.5, "price_1w": -4.0, "price_1m": -10.9, "status": "\ud83d\udfe1 EARLY", "days_seen": 5, "avg_vol": 72.4}, {"ticker": "AEP", "price": 130.7, "vol_spike": 31.2, "price_1w": -2.2, "price_1m": -3.4, "status": "\ud83d\udfe1 EARLY", "days_seen": 5, "avg_vol": 37.3}, {"ticker": "SO", "price": 93.1, "vol_spike": 29.6, "price_1w": -3.0, "price_1m": -4.2, "status": "\ud83d\udfe1 EARLY", "days_seen": 5, "avg_vol": 56.3}, {"ticker": "PEG", "price": 77.68, "vol_spike": 29.4, "price_1w": -3.4, "price_1m": -6.6, "status": "\ud83d\udfe1 EARLY", "days_seen": 5, "avg_vol": 31.8}, {"ticker": "UHS", "price": 168.23, "vol_spike": 28.5, "price_1w": 1.3, "price_1m": -6.9, "status": "\ud83d\udfe1 EARLY", "days_seen": 5, "avg_vol": 52.7}, {"ticker": "AIZ", "price": 244.14, "vol_spike": 28.4, "price_1w": 6.6, "price_1m": 11.3, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 5, "avg_vol": 66.9}, {"ticker": "IQV", "price": 173.55, "vol_spike": 27.2, "price_1w": 7.8, "price_1m": 3.7, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 5, "avg_vol": 61.2}, {"ticker": "ED", "price": 106.21, "vol_spike": 26.8, "price_1w": -3.1, "price_1m": -6.5, "status": "\ud83d\udfe1 EARLY", "days_seen": 5, "avg_vol": 43.6}, {"ticker": "ALL", "price": 213.8, "vol_spike": 25.5, "price_1w": -2.8, "price_1m": 1.3, "status": "\ud83d\udfe1 EARLY", "days_seen": 5, "avg_vol": 37.7}, {"ticker": "NCLH", "price": 16.58, "vol_spike": 25.1, "price_1w": -3.6, "price_1m": -16.9, "status": "\ud83d\udfe1 EARLY", "days_seen": 5, "avg_vol": 71.7}, {"ticker": "ANET", "price": 136.43, "vol_spike": 199.6, "price_1w": -21.0, "price_1m": -7.4, "status": "\ud83d\udd34 SELLING", "days_seen": 4, "avg_vol": 148.4}, {"ticker": "TECH", "price": 47.42, "vol_spike": 165.8, "price_1w": -13.4, "price_1m": -14.6, "status": "\ud83d\udd34 SELLING", "days_seen": 4, "avg_vol": 151.1}, {"ticker": "COR", "price": 259.7, "vol_spike": 161.7, "price_1w": -14.5, "price_1m": -19.1, "status": "\ud83d\udd34 SELLING", "days_seen": 4, "avg_vol": 136.8}, {"ticker": "DDOG", "price": 202.32, "vol_spike": 144.3, "price_1w": 37.9, "price_1m": 92.0, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 4, "avg_vol": 109.5}, {"ticker": "MCK", "price": 725.17, "vol_spike": 142.5, "price_1w": -10.2, "price_1m": -16.2, "status": "\ud83d\udd34 SELLING", "days_seen": 4, "avg_vol": 107.9}, {"ticker": "SMCI", "price": 33.52, "vol_spike": 129.3, "price_1w": 20.1, "price_1m": 32.7, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 4, "avg_vol": 102.4}, {"ticker": "ETR", "price": 112.97, "vol_spike": 126.2, "price_1w": -2.9, "price_1m": -2.5, "status": "\ud83d\udfe1 EARLY", "days_seen": 4, "avg_vol": 110.4}, {"ticker": "GLW", "price": 207.39, "vol_spike": 114.8, "price_1w": 29.7, "price_1m": 21.1, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 4, "avg_vol": 73.7}, {"ticker": "TRMB", "price": 58.04, "vol_spike": 100.7, "price_1w": -15.3, "price_1m": -10.4, "status": "\ud83d\udd34 SELLING", "days_seen": 4, "avg_vol": 81.5}, {"ticker": "IFF", "price": 78.75, "vol_spike": 95.3, "price_1w": 12.4, "price_1m": 8.6, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 4, "avg_vol": 87.9}, {"ticker": "DVN", "price": 46.73, "vol_spike": 94.6, "price_1w": -8.8, "price_1m": -2.2, "status": "\ud83d\udd34 SELLING", "days_seen": 4, "avg_vol": 73.4}, {"ticker": "PTC", "price": 145.92, "vol_spike": 93.1, "price_1w": 5.6, "price_1m": 9.4, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 4, "avg_vol": 79.8}, {"ticker": "DASH", "price": 157.33, "vol_spike": 91.3, "price_1w": -8.8, "price_1m": 3.1, "status": "\ud83d\udd34 SELLING", "days_seen": 4, "avg_vol": 73.0}, {"ticker": "DIS", "price": 104.72, "vol_spike": 86.9, "price_1w": 3.4, "price_1m": 5.6, "status": "\ud83d\udfe1 EARLY", "days_seen": 4, "avg_vol": 79.5}, {"ticker": "POOL", "price": 184.77, "vol_spike": 75.3, "price_1w": -9.1, "price_1m": -14.0, "status": "\ud83d\udd34 SELLING", "days_seen": 4, "avg_vol": 57.3}, {"ticker": "UBER", "price": 76.15, "vol_spike": 75.0, "price_1w": 3.0, "price_1m": 8.0, "status": "\ud83d\udfe1 EARLY", "days_seen": 4, "avg_vol": 61.8}, {"ticker": "DOC", "price": 19.76, "vol_spike": 72.7, "price_1w": 21.3, "price_1m": 18.7, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 4, "avg_vol": 78.5}, {"ticker": "CTVA", "price": 82.83, "vol_spike": 68.4, "price_1w": 1.4, "price_1m": -1.2, "status": "\ud83d\udfe1 EARLY", "days_seen": 4, "avg_vol": 56.1}, {"ticker": "EVRG", "price": 83.43, "vol_spike": 65.4, "price_1w": 1.6, "price_1m": -0.2, "status": "\ud83d\udfe1 EARLY", "days_seen": 4, "avg_vol": 46.9}, {"ticker": "JBL", "price": 365.24, "vol_spike": 58.9, "price_1w": 7.2, "price_1m": 21.9, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 4, "avg_vol": 56.3}, {"ticker": "MCD", "price": 274.6, "vol_spike": 58.0, "price_1w": -3.3, "price_1m": -10.2, "status": "\ud83d\udfe1 EARLY", "days_seen": 4, "avg_vol": 45.5}, {"ticker": "JKHY", "price": 143.65, "vol_spike": 56.6, "price_1w": -5.8, "price_1m": -2.4, "status": "\ud83d\udd34 SELLING", "days_seen": 4, "avg_vol": 47.9}, {"ticker": "JCI", "price": 141.78, "vol_spike": 51.6, "price_1w": -1.8, "price_1m": -0.5, "status": "\ud83d\udfe1 EARLY", "days_seen": 4, "avg_vol": 44.0}, {"ticker": "TJX", "price": 148.91, "vol_spike": 49.2, "price_1w": -3.7, "price_1m": -7.9, "status": "\ud83d\udfe1 EARLY", "days_seen": 4, "avg_vol": 39.9}, {"ticker": "EMR", "price": 139.43, "vol_spike": 45.6, "price_1w": 2.9, "price_1m": -3.0, "status": "\ud83d\udfe1 EARLY", "days_seen": 4, "avg_vol": 51.4}, {"ticker": "GWW", "price": 1226.09, "vol_spike": 45.0, "price_1w": 7.4, "price_1m": 4.6, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 4, "avg_vol": 44.9}, {"ticker": "AMD", "price": 458.79, "vol_spike": 40.9, "price_1w": 34.3, "price_1m": 87.2, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 4, "avg_vol": 35.8}, {"ticker": "ES", "price": 67.24, "vol_spike": 38.1, "price_1w": -3.2, "price_1m": -3.9, "status": "\ud83d\udfe1 EARLY", "days_seen": 4, "avg_vol": 40.5}, {"ticker": "KHC", "price": 23.26, "vol_spike": 34.5, "price_1w": 3.7, "price_1m": 0.9, "status": "\ud83d\udfe1 EARLY", "days_seen": 4, "avg_vol": 33.7}, {"ticker": "BRO", "price": 55.35, "vol_spike": 26.6, "price_1w": -4.0, "price_1m": -15.0, "status": "\ud83d\udfe1 EARLY", "days_seen": 4, "avg_vol": 54.4}, {"ticker": "ZTS", "price": 76.67, "vol_spike": 295.7, "price_1w": -32.0, "price_1m": -34.7, "status": "\ud83d\udd34 SELLING", "days_seen": 3, "avg_vol": 228.0}, {"ticker": "TPR", "price": 133.34, "vol_spike": 136.8, "price_1w": -4.6, "price_1m": -11.3, "status": "\ud83d\udfe1 EARLY", "days_seen": 3, "avg_vol": 112.8}, {"ticker": "APP", "price": 478.42, "vol_spike": 98.0, "price_1w": 0.7, "price_1m": 22.2, "status": "\ud83d\udfe1 EARLY", "days_seen": 3, "avg_vol": 80.2}, {"ticker": "FIS", "price": 42.36, "vol_spike": 96.2, "price_1w": -10.4, "price_1m": -2.3, "status": "\ud83d\udd34 SELLING", "days_seen": 3, "avg_vol": 66.4}, {"ticker": "AXON", "price": 394.36, "vol_spike": 93.9, "price_1w": 0.2, "price_1m": 14.0, "status": "\ud83d\udfe1 EARLY", "days_seen": 3, "avg_vol": 68.9}, {"ticker": "FTNT", "price": 115.44, "vol_spike": 82.4, "price_1w": 29.4, "price_1m": 50.5, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 3, "avg_vol": 61.5}, {"ticker": "APH", "price": 122.47, "vol_spike": 78.0, "price_1w": -13.2, "price_1m": -13.0, "status": "\ud83d\udd34 SELLING", "days_seen": 3, "avg_vol": 51.9}, {"ticker": "TTD", "price": 21.52, "vol_spike": 75.4, "price_1w": -10.7, "price_1m": 7.1, "status": "\ud83d\udd34 SELLING", "days_seen": 3, "avg_vol": 57.0}, {"ticker": "VST", "price": 152.05, "vol_spike": 74.4, "price_1w": -5.5, "price_1m": -1.7, "status": "\ud83d\udd34 SELLING", "days_seen": 3, "avg_vol": 63.3}, {"ticker": "HWM", "price": 273.58, "vol_spike": 64.4, "price_1w": 14.2, "price_1m": 8.3, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 3, "avg_vol": 57.9}, {"ticker": "TKO", "price": 184.5, "vol_spike": 63.0, "price_1w": -0.8, "price_1m": -6.5, "status": "\ud83d\udfe1 EARLY", "days_seen": 3, "avg_vol": 45.8}, {"ticker": "COHR", "price": 379.69, "vol_spike": 61.1, "price_1w": 15.1, "price_1m": 23.5, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 3, "avg_vol": 49.3}, {"ticker": "AES", "price": 14.35, "vol_spike": 58.3, "price_1w": 0.5, "price_1m": 1.0, "status": "\ud83d\udfe1 EARLY", "days_seen": 3, "avg_vol": 48.9}, {"ticker": "MU", "price": 795.33, "vol_spike": 55.0, "price_1w": 38.0, "price_1m": 89.1, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 3, "avg_vol": 44.2}, {"ticker": "EPAM", "price": 97.35, "vol_spike": 54.1, "price_1w": -12.0, "price_1m": -20.5, "status": "\ud83d\udd34 SELLING", "days_seen": 3, "avg_vol": 45.5}, {"ticker": "ATO", "price": 182.13, "vol_spike": 44.6, "price_1w": -3.0, "price_1m": -4.3, "status": "\ud83d\udfe1 EARLY", "days_seen": 3, "avg_vol": 41.6}, {"ticker": "LYV", "price": 163.0, "vol_spike": 43.3, "price_1w": 3.4, "price_1m": 1.5, "status": "\ud83d\udfe1 EARLY", "days_seen": 3, "avg_vol": 41.2}, {"ticker": "CRL", "price": 168.46, "vol_spike": 42.4, "price_1w": -2.2, "price_1m": -4.1, "status": "\ud83d\udfe1 EARLY", "days_seen": 3, "avg_vol": 40.7}, {"ticker": "APA", "price": 36.7, "vol_spike": 36.6, "price_1w": -12.7, "price_1m": -4.4, "status": "\ud83d\udd34 SELLING", "days_seen": 3, "avg_vol": 36.5}, {"ticker": "DECK", "price": 96.65, "vol_spike": 31.4, "price_1w": -1.0, "price_1m": -10.4, "status": "\ud83d\udfe1 EARLY", "days_seen": 3, "avg_vol": 30.4}, {"ticker": "KLAC", "price": 1845.19, "vol_spike": 29.6, "price_1w": 7.7, "price_1m": 6.2, "status": "\ud83d\udfe2 CONFIRMING", "days_seen": 3, "avg_vol": 30.4}, {"ticker": "C", "price": 125.85, "vol_spike": 25.7, "price_1w": 0.2, "price_1m": 1.7, "status": "\ud83d\udfe1 EARLY", "days_seen": 3, "avg_vol": 32.9}], "scan_date": "2026-05-11"};
+    renderInsights();
+    showTab(document.querySelector('.tab.active'), 'signals');
+}
+
+function renderInsights() {
+    const signals = data.signals || [];
+    const alerts = data.alerts || [];
+    const earlySignals = signals.filter(s => s.status.includes('EARLY'));
+    const confirmSignals = signals.filter(s => s.status.includes('CONFIRMING'));
+    const sellSignals = signals.filter(s => s.status.includes('SELLING'));
+
+    let html = '<h3>📊 Market Summary — ' + (data.scan_date || 'No data') + '</h3>';
+    html += '<p><span class="highlight">' + alerts.length + '</span> stocks with unusual volume. ';
+    html += '<span class="green">' + alerts.filter(a=>a.status.includes('CONFIRMING')).length + '</span> breaking out, ';
+    html += '<span class="highlight">' + alerts.filter(a=>a.status.includes('EARLY')).length + '</span> accumulating, ';
+    html += '<span class="red">' + alerts.filter(a=>a.status.includes('SELLING')).length + '</span> distributing.</p>';
+
+    if (earlySignals.length > 0) {
+        html += '<p>🚨 <strong>Smart money loading:</strong> ';
+        html += earlySignals.slice(0,5).map(s => '<span class="highlight">' + s.ticker + '</span> ($' + s.price.toFixed(0) + ', +' + s.vol_spike.toFixed(0) + '% vol, ' + s.days_seen + ' days)').join(' · ');
+        html += '</p>';
+    }
+    if (confirmSignals.length > 0) {
+        html += '<p>🟢 <strong>Confirmed trends:</strong> ';
+        html += confirmSignals.slice(0,5).map(s => '<span class="green">' + s.ticker + '</span> (+' + s.price_1w.toFixed(0) + '% 1W)').join(' · ');
+        html += '</p>';
+    }
+    if (sellSignals.length > 0) {
+        html += '<p>🔴 <strong>Avoid:</strong> ';
+        html += sellSignals.slice(0,5).map(s => '<span class="red">' + s.ticker + '</span> (' + s.price_1w.toFixed(0) + '%)').join(' · ');
+        html += '</p>';
+    }
+    document.getElementById('insights').innerHTML = html;
+}
+
+let currentSort = { key: null, asc: false };
+let currentTabItems = [];
+
+function sortItems(items, key) {
+    if (currentSort.key === key) currentSort.asc = !currentSort.asc;
+    else { currentSort.key = key; currentSort.asc = false; }
+    return items.sort((a, b) => {
+        let va = a[key], vb = b[key];
+        if (typeof va === 'string') return currentSort.asc ? va.localeCompare(vb) : vb.localeCompare(va);
+        return currentSort.asc ? va - vb : vb - va;
+    });
+}
+
+function arrow(key) {
+    if (currentSort.key !== key) return '';
+    return '<span class="sort-arrow">' + (currentSort.asc ? '▲' : '▼') + '</span>';
+}
+
+function showTab(el, tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    currentSort = { key: null, asc: false };
+
+    if (tab === 'signals') { showSignals(); return; }
+    if (tab === 'early') currentTabItems = data.alerts.filter(a => a.status.includes('EARLY'));
+    else if (tab === 'confirming') currentTabItems = data.alerts.filter(a => a.status.includes('CONFIRMING'));
+    else if (tab === 'selling') currentTabItems = data.alerts.filter(a => a.status.includes('SELLING'));
+    document.getElementById('dashboard').innerHTML = renderTable(currentTabItems);
+}
+
+function renderTable(items) {
+    let html = '<table><tr>';
+    html += '<th onclick="sortAndRender(\'ticker\')">Ticker' + arrow('ticker') + '</th>';
+    html += '<th onclick="sortAndRender(\'price\')">Price' + arrow('price') + '</th>';
+    html += '<th onclick="sortAndRender(\'vol_spike\')">Vol Spike' + arrow('vol_spike') + '</th>';
+    html += '<th onclick="sortAndRender(\'price_1w\')">1W' + arrow('price_1w') + '</th>';
+    html += '<th onclick="sortAndRender(\'price_1m\')">1M' + arrow('price_1m') + '</th>';
+    html += '</tr>';
+    items.forEach(a => {
+        const vc = a.vol_spike > 100 ? 'positive' : 'neutral';
+        const pc = a.price_1w > 0 ? 'positive' : a.price_1w < 0 ? 'negative' : 'neutral';
+        html += '<tr onclick="lookup(\'' + a.ticker + '\')">';
+        html += '<td><strong>' + a.ticker + '</strong></td>';
+        html += '<td>$' + a.price.toFixed(2) + '</td>';
+        html += '<td class="' + vc + '">+' + a.vol_spike.toFixed(0) + '%</td>';
+        html += '<td class="' + pc + '">' + (a.price_1w > 0 ? '+' : '') + a.price_1w.toFixed(1) + '%</td>';
+        html += '<td class="' + pc + '">' + (a.price_1m > 0 ? '+' : '') + a.price_1m.toFixed(1) + '%</td>';
+        html += '</tr>';
+    });
+    html += '</table>';
+    return html;
+}
+
+function sortAndRender(key) {
+    sortItems(currentTabItems, key);
+    document.getElementById('dashboard').innerHTML = renderTable(currentTabItems);
+}
+
+function showSignals() {
+    const s = data.signals || [];
+    if (s.length === 0) {
+        document.getElementById('dashboard').innerHTML = '<p class="loading">No persistent signals. Run: python3 volume_scan.py --backfill</p>';
+        return;
+    }
+    currentTabItems = s;
+    renderSignalsTable();
+}
+
+function renderSignalsTable() {
+    const s = currentTabItems;
+    let html = '<table><tr>';
+    html += '<th onclick="sortAndRenderSignals(\'ticker\')">Ticker' + arrow('ticker') + '</th>';
+    html += '<th onclick="sortAndRenderSignals(\'price\')">Price' + arrow('price') + '</th>';
+    html += '<th onclick="sortAndRenderSignals(\'days_seen\')">Days' + arrow('days_seen') + '</th>';
+    html += '<th onclick="sortAndRenderSignals(\'vol_spike\')">Vol' + arrow('vol_spike') + '</th>';
+    html += '<th onclick="sortAndRenderSignals(\'avg_vol\')">Avg' + arrow('avg_vol') + '</th>';
+    html += '<th>Trend</th><th>Type</th></tr>';
+    s.forEach(x => {
+        const trend = x.vol_spike > x.avg_vol ? '📈' : x.vol_spike < x.avg_vol * 0.7 ? '📉' : '➡️';
+        const sc = x.status.includes('EARLY') ? 'signal-early' : x.status.includes('CONFIRMING') ? 'signal-confirming' : 'signal-selling';
+        const label = x.status.includes('EARLY') ? 'EARLY' : x.status.includes('CONFIRMING') ? 'BREAKOUT' : 'SELLING';
+        html += '<tr onclick="lookup(\'' + x.ticker + '\')">';
+        html += '<td><strong>' + x.ticker + '</strong></td>';
+        html += '<td>$' + x.price.toFixed(2) + '</td>';
+        html += '<td>' + x.days_seen + '/5</td>';
+        html += '<td class="positive">+' + x.vol_spike.toFixed(0) + '%</td>';
+        html += '<td>+' + x.avg_vol.toFixed(0) + '%</td>';
+        html += '<td>' + trend + '</td>';
+        html += '<td><span class="signal-tag ' + sc + '">' + label + '</span></td></tr>';
+    });
+    html += '</table>';
+    document.getElementById('dashboard').innerHTML = html;
+}
+
+function sortAndRenderSignals(key) {
+    sortItems(currentTabItems, key);
+    renderSignalsTable();
+}
+
+function lookup(ticker) {
+    document.getElementById('ticker-input').value = ticker;
+    searchTicker();
+}
+
+async function searchTicker() {
+    const ticker = document.getElementById('ticker-input').value.trim().toUpperCase();
+    if (!ticker) return;
+    document.getElementById('ticker-result').innerHTML = '<p class="loading">Analyzing ' + ticker + '...</p>';
+
+    const resp = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + ticker + '?range=3mo&interval=1d');
+    const d = await resp.json();
+
+    if (d.error) {
+        document.getElementById('ticker-result').innerHTML = '<p class="negative">' + d.error + '</p>';
+        return;
+    }
+
+    const pc = d.price_1w > 0 ? 'positive' : d.price_1w < 0 ? 'negative' : 'neutral';
+    const sc = d.signal === 'EARLY' ? 'signal-early' : d.signal === 'CONFIRMING' ? 'signal-confirming' : 'signal-selling';
+
+    let verdict = '';
+    if (d.vol_spike > 50 && Math.abs(d.price_1w) < 5) verdict = '🚨 <strong>Unusual accumulation</strong> — volume surging but price flat. Someone loading up quietly.';
+    else if (d.vol_spike > 50 && d.price_1w > 5) verdict = '🟢 <strong>Confirmed breakout</strong> — volume and price both up. Trend is real.';
+    else if (d.vol_spike > 50 && d.price_1w < -5) verdict = '🔴 <strong>Distribution</strong> — high volume selling. Institutions exiting.';
+    else if (d.vol_spike > 25) verdict = '📈 <strong>Mild activity</strong> — slightly elevated volume. Watchlist candidate.';
+    else if (d.vol_spike < -20) verdict = '📉 <strong>Volume drying up</strong> — interest fading.';
+    else verdict = '📊 <strong>Normal</strong> — no unusual volume activity.';
+
+    let html = '<div class="ticker-result">';
+    html += '<div class="ticker-header"><h2>' + d.ticker + '</h2>';
+    html += '<span class="price">$' + d.price.toFixed(2) + '</span>';
+    html += '<span class="signal-tag ' + sc + '">' + d.signal + '</span></div>';
+    html += '<p class="verdict">' + verdict + '</p>';
+    html += '<div class="metrics">';
+    html += '<div class="metric"><div class="metric-label">Volume Spike</div><div class="metric-value ' + (d.vol_spike > 50 ? 'positive' : 'neutral') + '">' + (d.vol_spike > 0 ? '+' : '') + d.vol_spike.toFixed(0) + '%</div></div>';
+    html += '<div class="metric"><div class="metric-label">Price 1W</div><div class="metric-value ' + pc + '">' + (d.price_1w > 0 ? '+' : '') + d.price_1w.toFixed(1) + '%</div></div>';
+    html += '<div class="metric"><div class="metric-label">Price 1M</div><div class="metric-value ' + pc + '">' + (d.price_1m > 0 ? '+' : '') + d.price_1m.toFixed(1) + '%</div></div>';
+    html += '<div class="metric"><div class="metric-label">Avg Vol</div><div class="metric-value">' + (d.avg_volume / 1e6).toFixed(1) + 'M</div></div>';
+    html += '</div>';
+    html += '<p class="vol-chart-title">Daily Volume vs 21-day Average</p>';
+    html += '<p style="font-size:11px;color:#6e7681;margin-bottom:10px;">🟠 Orange = 50%+ above normal (unusual) · 🟢 Green = above average · ⬜ Grey = normal/quiet</p>';
+
+    const maxVol = Math.max(...d.daily_volume.map(v => v.ratio));
+    d.daily_volume.forEach(v => {
+        const width = Math.max((v.ratio / maxVol) * 100, 2);
+        const color = v.ratio > 1.5 ? '#f0883e' : v.ratio > 1 ? '#238636' : '#21262d';
+        const pct = ((v.ratio - 1) * 100).toFixed(0);
+        html += '<div class="day-row">';
+        html += '<span class="day-date">' + v.date + '</span>';
+        html += '<div class="day-bar" style="width:' + width + '%;background:' + color + '"></div>';
+        html += '<span class="day-val ' + (v.ratio > 1.5 ? 'positive' : '') + '">' + (pct >= 0 ? '+' : '') + pct + '%</span>';
+        html += '</div>';
+    });
+
+    html += '</div>';
+    document.getElementById('ticker-result').innerHTML = html;
+    document.querySelector('.ticker-section').scrollIntoView({behavior:'smooth'});
+}
+
+loadDashboard();
+</script>
+</body>
+</html>
