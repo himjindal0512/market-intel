@@ -273,8 +273,43 @@ async function searchTicker() {
     if (!ticker) return;
     document.getElementById('ticker-result').innerHTML = '<p class="loading">Analyzing ' + ticker + '...</p>';
 
-    const resp = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + ticker + '?range=3mo&interval=1d');
-    const d = await resp.json();
+    let d;
+    try {
+        const resp = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/' + ticker + '?range=3mo&interval=1d'));
+        if (!resp.ok) throw new Error('Failed');
+        const raw = await resp.json();
+        const result = raw.chart.result[0];
+        const closes = result.indicators.quote[0].close;
+        const volumes = result.indicators.quote[0].volume;
+        const timestamps = result.timestamp;
+
+        // Filter nulls
+        const validIdx = closes.map((c,i) => c !== null && volumes[i] !== null ? i : -1).filter(i => i >= 0);
+        const c = validIdx.map(i => closes[i]);
+        const v = validIdx.map(i => volumes[i]);
+        const ts = validIdx.map(i => timestamps[i]);
+
+        if (c.length < 22) throw new Error('Not enough data');
+
+        const price = c[c.length - 1];
+        const price_1w = (c[c.length-1] / c[c.length-6] - 1) * 100;
+        const price_1m = (c[c.length-1] / c[c.length-22] - 1) * 100;
+        const vol_recent = v.slice(-5).reduce((a,b)=>a+b,0) / 5;
+        const vol_prior = v.slice(-21,-5).reduce((a,b)=>a+b,0) / 16;
+        const vol_spike = (vol_recent / Math.max(vol_prior, 1) - 1) * 100;
+        const avg_volume = v.slice(-21).reduce((a,b)=>a+b,0) / 21;
+
+        const daily_volume = [];
+        for (let i = -10; i < 0; i++) {
+            const idx = v.length + i;
+            const date = new Date(ts[ts.length + i] * 1000);
+            daily_volume.push({ date: (date.getMonth()+1) + '/' + date.getDate(), ratio: Math.round((v[idx] / Math.max(avg_volume,1)) * 100) / 100 });
+        }
+
+        d = { ticker, price, price_1w, price_1m, vol_spike, avg_volume, daily_volume, signal: Math.abs(price_1w) < 5 ? 'EARLY' : price_1w > 5 ? 'CONFIRMING' : 'SELLING' };
+    } catch(e) {
+        d = { error: 'Could not fetch data for ' + ticker + '. Try again in a moment.' };
+    }
 
     if (d.error) {
         document.getElementById('ticker-result').innerHTML = '<p class="negative">' + d.error + '</p>';

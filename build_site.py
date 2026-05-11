@@ -64,12 +64,6 @@ def build():
 }}"""
     )
 
-    # Replace ticker API call with direct yfinance-like proxy (use a free API)
-    html = html.replace(
-        "const resp = await fetch('/api/ticker/' + ticker);",
-        "const resp = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + ticker + '?range=3mo&interval=1d');"
-    )
-
     # Replace the ticker search to parse Yahoo Finance directly
     html = html.replace(
         """async function searchTicker() {
@@ -86,33 +80,40 @@ def build():
 
     let d;
     try {
-        const resp = await fetch('https://corsproxy.io/?' + encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/' + ticker + '?range=3mo&interval=1d'));
+        const resp = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart/' + ticker + '?range=3mo&interval=1d'));
+        if (!resp.ok) throw new Error('Failed');
         const raw = await resp.json();
         const result = raw.chart.result[0];
-        const closes = result.indicators.quote[0].close.filter(v => v !== null);
-        const volumes = result.indicators.quote[0].volume.filter(v => v !== null);
+        const closes = result.indicators.quote[0].close;
+        const volumes = result.indicators.quote[0].volume;
         const timestamps = result.timestamp;
 
-        const price = closes[closes.length - 1];
-        const price_1w = (closes[closes.length-1] / closes[closes.length-6] - 1) * 100;
-        const price_1m = (closes[closes.length-1] / closes[closes.length-22] - 1) * 100;
-        const vol_recent = volumes.slice(-5).reduce((a,b)=>a+b,0) / 5;
-        const vol_prior = volumes.slice(-21,-5).reduce((a,b)=>a+b,0) / 16;
+        // Filter nulls
+        const validIdx = closes.map((c,i) => c !== null && volumes[i] !== null ? i : -1).filter(i => i >= 0);
+        const c = validIdx.map(i => closes[i]);
+        const v = validIdx.map(i => volumes[i]);
+        const ts = validIdx.map(i => timestamps[i]);
+
+        if (c.length < 22) throw new Error('Not enough data');
+
+        const price = c[c.length - 1];
+        const price_1w = (c[c.length-1] / c[c.length-6] - 1) * 100;
+        const price_1m = (c[c.length-1] / c[c.length-22] - 1) * 100;
+        const vol_recent = v.slice(-5).reduce((a,b)=>a+b,0) / 5;
+        const vol_prior = v.slice(-21,-5).reduce((a,b)=>a+b,0) / 16;
         const vol_spike = (vol_recent / Math.max(vol_prior, 1) - 1) * 100;
-        const avg_volume = volumes.slice(-21).reduce((a,b)=>a+b,0) / 21;
+        const avg_volume = v.slice(-21).reduce((a,b)=>a+b,0) / 21;
 
         const daily_volume = [];
-        const avg21 = avg_volume;
         for (let i = -10; i < 0; i++) {
-            const idx = volumes.length + i;
-            const ts = timestamps[timestamps.length + i];
-            const date = new Date(ts * 1000);
-            daily_volume.push({ date: (date.getMonth()+1) + '/' + date.getDate(), ratio: Math.round((volumes[idx] / Math.max(avg21,1)) * 100) / 100 });
+            const idx = v.length + i;
+            const date = new Date(ts[ts.length + i] * 1000);
+            daily_volume.push({ date: (date.getMonth()+1) + '/' + date.getDate(), ratio: Math.round((v[idx] / Math.max(avg_volume,1)) * 100) / 100 });
         }
 
         d = { ticker, price, price_1w, price_1m, vol_spike, avg_volume, daily_volume, signal: Math.abs(price_1w) < 5 ? 'EARLY' : price_1w > 5 ? 'CONFIRMING' : 'SELLING' };
     } catch(e) {
-        d = { error: 'Could not fetch data for ' + ticker + '. Check the symbol.' };
+        d = { error: 'Could not fetch data for ' + ticker + '. Try again in a moment.' };
     }"""
     )
 
