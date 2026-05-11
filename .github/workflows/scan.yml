@@ -1,0 +1,24 @@
+name: Daily Market Scan
+on:
+  schedule:
+    - cron: '30 21 * * 1-5'  # 4:30 PM ET weekdays
+  workflow_dispatch:  # manual trigger button
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: python volume_scan.py --backfill
+      - run: python scanner.py --no-trends
+      - name: Save results
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add volume_alerts.json signals.json || true
+          git commit -m "📊 Daily scan $(date +%Y-%m-%d)" || true
+          git push || true

@@ -1,31 +1,7 @@
 services:
-  # Web dashboard (always running)
   - type: web
     name: market-intel
     runtime: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && python volume_scan.py --backfill
     startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
     plan: free
-    disk:
-      name: data
-      mountPath: /data
-      sizeGB: 1
-    envVars:
-      - key: DATA_DIR
-        value: /data
-
-  # Daily scanner (runs Mon-Fri at 4:30 PM ET / 21:30 UTC)
-  - type: cron
-    name: market-intel-scanner
-    runtime: python
-    buildCommand: pip install -r requirements.txt
-    schedule: "30 21 * * 1-5"
-    startCommand: python volume_scan.py --backfill
-    plan: free
-    disk:
-      name: data
-      mountPath: /data
-      sizeGB: 1
-    envVars:
-      - key: DATA_DIR
-        value: /data
