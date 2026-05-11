@@ -56,16 +56,34 @@ Or edit directly on github.com — click any file → ✏️ pencil icon → edi
 
 ## Running Locally
 
+**Mac/Linux:**
 ```bash
 cd market-intel
 pip3 install -r requirements.txt
-
-# Run the scanner
 python3 volume_scan.py --backfill
-
-# Start the web dashboard (http://localhost:5000)
 python3 app.py
 ```
+
+**Windows:**
+```bash
+# 1. Install Python from https://python.org/downloads (check "Add to PATH" during install)
+# 2. Install Git from https://git-scm.com/download/win
+
+# 3. Clone the repo (open Command Prompt or PowerShell)
+git clone https://github.com/himjindal0512/market-intel.git
+cd market-intel
+
+# 4. Install dependencies
+pip install -r requirements.txt
+
+# 5. Run the scanner
+python volume_scan.py --backfill
+
+# 6. Start the dashboard (http://localhost:5000)
+python app.py
+```
+
+> On Windows, use `python` and `pip` (not `python3` / `pip3`).
 
 ---
 
