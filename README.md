@@ -1,44 +1,98 @@
-# Market Intelligence Signal Detector
+# 📡 Market Intelligence
 
-Catches investment themes early by tracking **acceleration** (rate of change) across multiple signals.
+Volume-based signal detection across S&P 500. Catches institutional moves before they hit headlines.
 
-## The Key Insight
+**Live Dashboard:** [https://himjindal0512.github.io/market-intel/](https://himjindal0512.github.io/market-intel/)
 
-You missed semis because by the time NVDA was on every headline, the signal was saturated.
-This tool flags themes at the "whisper" stage: search interest growing 3-5x week-over-week
-but stocks haven't moved yet.
+---
 
 ## How It Works
 
-1. **Google Trends** — tracks search acceleration for sector keywords
-2. **Price/Volume** — detects breakouts and unusual volume in theme stocks
-3. **Composite Score** — weights trend acceleration (50%), price momentum (30%), volume (20%)
-4. **Early Signal Alert** — flags themes where search is surging but prices haven't caught up
+Scans all 500 S&P stocks daily for unusual volume activity and categorizes them:
 
-## Setup
+- 🟡 **Accumulation** — Volume surging but price flat. Big players buying quietly before a move.
+- 🟢 **Breakouts** — Volume AND price both up. Confirmed trend backed by institutions.
+- 🔴 **Distribution** — Volume up but price dropping. Institutions exiting. Avoid.
+- 🎯 **Signals** — Stocks with unusual volume for 3+ consecutive days (not noise).
+
+## Status Tags
+
+- **EARLY** — Volume spike but price hasn't moved. Potential early entry. Research why.
+- **BREAKOUT** — Price up 5%+ with volume. Move confirmed.
+- **SELLING** — Price down 5%+ with volume. Smart money leaving.
+
+## Trend (Signals tab)
+
+- 📈 growing — Volume increasing day over day (strongest signal)
+- ➡️ steady — Consistent elevated volume
+- 📉 fading — Volume spike dying down (move may be over)
+
+---
+
+## Auto-Updates
+
+Runs automatically every weekday at 4:30 PM ET (after market close) via GitHub Actions. No manual work needed.
+
+To trigger a manual scan: **Actions tab → Daily Market Scan → Run workflow**
+
+---
+
+## Making Changes (from any computer)
+
+```bash
+# First time on a new machine
+git clone https://github.com/himjindal0512/market-intel.git
+cd market-intel
+
+# Edit files, then push
+git add .
+git commit -m "description of change"
+git push
+```
+
+Or edit directly on github.com — click any file → ✏️ pencil icon → edit → commit.
+
+---
+
+## Running Locally
 
 ```bash
 cd market-intel
-pip install -r requirements.txt
-python scanner.py
+pip3 install -r requirements.txt
+
+# Run the scanner
+python3 volume_scan.py --backfill
+
+# Start the web dashboard (http://localhost:5000)
+python3 app.py
 ```
 
-## Interpreting Results
+---
 
-- **🔥 Score > 20** — Strong signal, theme is accelerating fast
-- **📈 Score 5-20** — Moderate momentum building
-- **📊 Score < 5** — Quiet, no signal yet
-- **🚨 Early Signal** — The money shot: high trend acceleration + low price move = you're early
+## Files
 
-## Extending
+| File | What it does |
+|------|-------------|
+| `volume_scan.py` | Scans S&P 500 for unusual volume, saves to volume_alerts.json |
+| `scanner.py` | Theme-based scanner (Reddit + volume + price for 10 sectors) |
+| `app.py` | Local web dashboard (Flask) |
+| `build_site.py` | Builds static site for GitHub Pages |
+| `templates/dashboard.html` | Dashboard UI template |
+| `docs/` | Generated static site (auto-deployed) |
 
-Add more themes by editing `SECTOR_THEMES` and `THEME_TICKERS` in scanner.py.
-Run daily and compare scores over time — consistent acceleration = real trend, not noise.
+---
 
-## Next Steps (future iterations)
+## How to Use
 
-- Reddit mention velocity (PRAW API)
-- SEC 13F filing tracker (unusual institutional buying)
-- Earnings call keyword extraction
-- Slack/Discord alerts when score crosses threshold
-- Historical backtesting of signal accuracy
+1. Check the dashboard daily after market close
+2. Look at 🎯 **Signals** tab first — these are persistent (3+ days)
+3. Focus on 🟡 **EARLY** tagged stocks — volume up but price flat
+4. Use 🔍 **Ticker Lookup** to research any stock
+5. Google "[ticker] news" before buying anything — understand WHY volume is up
+6. Avoid anything tagged 🔴 SELLING
+
+---
+
+## Cost
+
+$0. Everything uses free public data (Yahoo Finance, GitHub Actions, GitHub Pages).
