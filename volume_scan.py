@@ -278,8 +278,8 @@ def get_earnings_dates() -> dict:
     try:
         import urllib.request
         today = datetime.now()
-        from_date = (today - timedelta(days=5)).strftime("%Y-%m-%d")
-        to_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
+        from_date = (today - timedelta(days=7)).strftime("%Y-%m-%d")
+        to_date = (today + timedelta(days=7)).strftime("%Y-%m-%d")
         url = f"https://finnhub.io/api/v1/calendar/earnings?from={from_date}&to={to_date}&token={api_key}"
         req = urllib.request.Request(url)
         with urllib.request.urlopen(req, timeout=15) as resp:
@@ -422,13 +422,13 @@ def tag_alerts(alerts: list[dict], scan_date: str) -> list[dict]:
         tags = []
         ticker = a["ticker"]
 
-        # Earnings tag: within ±3 trading days
+        # Earnings tag: within ±5 trading days
         if ticker in earnings:
             try:
                 earn_date = datetime.strptime(earnings[ticker], "%Y-%m-%d")
                 today = datetime.strptime(scan_date, "%Y-%m-%d") if scan_date else datetime.now()
                 diff = (earn_date - today).days
-                if -3 <= diff <= 3:
+                if -5 <= diff <= 5:
                     label = f"EARNINGS ({diff:+d}d)" if diff != 0 else "EARNINGS (today)"
                     tags.append(label)
             except Exception:
