@@ -377,7 +377,7 @@ function renderSectorFlow() {
     let html = '<div class="flow-section inflow"><h4>▲ Money Flowing In</h4>';
     if (inflows.length) {
         inflows.forEach(([name, v]) => {
-            html += '<div class="flow-row inflow"><span class="sector-name">' + name + '</span><span class="flow-count">' + v.buy + ' stocks</span></div>';
+            html += '<div class="flow-row inflow" style="cursor:pointer" onclick="filterBySector(\'' + name.replace(/'/g, "\\'") + '\',\'buy\')"><span class="sector-name">' + name + '</span><span class="flow-count">' + v.buy + ' stocks</span></div>';
         });
     } else { html += '<div class="flow-row">No clear inflows today</div>'; }
     html += '</div>';
@@ -385,7 +385,7 @@ function renderSectorFlow() {
     html += '<div class="flow-section outflow"><h4>▼ Money Flowing Out</h4>';
     if (outflows.length) {
         outflows.forEach(([name, v]) => {
-            html += '<div class="flow-row outflow"><span class="sector-name">' + name + '</span><span class="flow-count">' + v.sell + ' stocks</span></div>';
+            html += '<div class="flow-row outflow" style="cursor:pointer" onclick="filterBySector(\'' + name.replace(/'/g, "\\'") + '\',\'sell\')"><span class="sector-name">' + name + '</span><span class="flow-count">' + v.sell + ' stocks</span></div>';
         });
     } else { html += '<div class="flow-row">No clear outflows today</div>'; }
     html += '</div>';
@@ -444,6 +444,20 @@ function renderTable(items) {
 function expandTable() {
     currentTabItems._showAll = true;
     document.getElementById('dashboard').innerHTML = renderTable(currentTabItems);
+}
+
+function filterBySector(sector, type) {
+    const alerts = data.alerts || [];
+    if (type === 'buy') {
+        currentTabItems = alerts.filter(a => a.sector === sector && a.status.includes('CONFIRMING') && parseInt(a.buy_ratio) >= 3);
+    } else {
+        currentTabItems = alerts.filter(a => a.sector === sector && (a.status.includes('SELLING') || parseInt(a.buy_ratio) <= 1));
+    }
+    allTabItems = currentTabItems;
+    // Reset tabs visual
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('dashboard').innerHTML = renderTable(currentTabItems);
+    document.querySelector('.main-card:last-of-type').scrollIntoView({ behavior: 'smooth' });
 }
 
 function sortAndRender(key) {
