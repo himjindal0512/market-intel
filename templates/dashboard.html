@@ -378,6 +378,10 @@ async function searchTicker() {
         return;
     }
 
+    // Use scan data buy_ratio if available (keeps top/bottom consistent)
+    const scanMatch = (data.alerts || []).find(a => a.ticker === ticker);
+    if (scanMatch && scanMatch.buy_ratio) d.buy_ratio = scanMatch.buy_ratio;
+
     const pc = d.price_1w > 0 ? 'positive' : d.price_1w < 0 ? 'negative' : 'neutral';
     const sc = d.signal === 'EARLY' ? 'signal-early' : d.signal === 'CONFIRMING' ? 'signal-confirming' : 'signal-selling';
 
