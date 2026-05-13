@@ -9,7 +9,8 @@ import json
 import logging
 import os
 import sys
-from datetime import datetime
+import time
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
@@ -269,6 +270,97 @@ def display_signal_noise(alerts):
             print(f"    {n['ticker']:6} ${n['price']:<8.2f} Seen {n['days_seen']}/5 days | Vol: {n['vol_spike']:+.0f}% | Probably earnings/news spike")
 
 
+def get_earnings_dates() -> dict:
+    """Fetch upcoming/recent earnings dates from Finnhub. Returns {ticker: earnings_date}."""
+    api_key = os.environ.get("FINNHUB_API_KEY", "")
+    if not api_key:
+        return {}
+    try:
+        import urllib.request
+        today = datetime.now()
+        from_date = (today - timedelta(days=5)).strftime("%Y-%m-%d")
+        to_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
+        url = f"https://finnhub.io/api/v1/calendar/earnings?from={from_date}&to={to_date}&token={api_key}"
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read())
+        earnings = {}
+        for item in data.get("earningsCalendar", []):
+            symbol = item.get("symbol", "")
+            date_str = item.get("date", "")
+            if symbol and date_str:
+                earnings[symbol] = date_str
+        return earnings
+    except Exception:
+        return {}
+
+
+def get_sector_map() -> dict:
+    """Get GICS sector for each S&P 500 ticker from the CSV source."""
+    try:
+        url = "https://raw.githubusercontent.com/datasets/s-and-p-500-companies/main/data/constituents.csv"
+        df = pd.read_csv(url)
+        col_sym = "Symbol" if "Symbol" in df.columns else df.columns[0]
+        col_sec = "Sector" if "Sector" in df.columns else (df.columns[3] if len(df.columns) > 3 else None)
+        if not col_sec:
+            return {}
+        sectors = {}
+        for _, row in df.iterrows():
+            ticker = str(row[col_sym]).replace(".", "-")
+            sectors[ticker] = row[col_sec]
+        return sectors
+    except Exception:
+        return {}
+
+
+def tag_alerts(alerts: list[dict], scan_date: str) -> list[dict]:
+    """Add tags to alerts: EARNINGS, SECTOR, or UNKNOWN."""
+    if not alerts:
+        return alerts
+
+    # Fetch earnings calendar
+    earnings = get_earnings_dates()
+
+    # Get sector map
+    sectors = get_sector_map()
+
+    # Count sectors in today's alerts for sector clustering
+    sector_counts = {}
+    for a in alerts:
+        sec = sectors.get(a["ticker"], "")
+        if sec:
+            sector_counts[sec] = sector_counts.get(sec, 0) + 1
+
+    # Tag each alert
+    for a in alerts:
+        tags = []
+        ticker = a["ticker"]
+
+        # Earnings tag: within ±3 trading days
+        if ticker in earnings:
+            try:
+                earn_date = datetime.strptime(earnings[ticker], "%Y-%m-%d")
+                today = datetime.strptime(scan_date, "%Y-%m-%d") if scan_date else datetime.now()
+                diff = (earn_date - today).days
+                if -3 <= diff <= 3:
+                    label = f"EARNINGS ({diff:+d}d)" if diff != 0 else "EARNINGS (today)"
+                    tags.append(label)
+            except Exception:
+                pass
+
+        # Sector tag: 5+ tickers from same sector in alerts
+        sec = sectors.get(ticker, "")
+        if sec and sector_counts.get(sec, 0) >= 5:
+            tags.append(f"SECTOR ({sec})")
+
+        a["tags"] = tags if tags else ["UNKNOWN"]
+        a["sector"] = sec
+
+    tagged_count = sum(1 for a in alerts if a["tags"] != ["UNKNOWN"])
+    print(f"  🏷️  Tagged {tagged_count}/{len(alerts)} alerts (earnings: {len(earnings)} dates loaded)")
+    return alerts
+
+
 def scan_volume(min_vol_spike: float = 25.0, backfill: bool = False):
     print("=" * 60)
     print("  BROAD MARKET VOLUME SCREENER")
@@ -311,6 +403,10 @@ def scan_volume(min_vol_spike: float = 25.0, backfill: bool = False):
     # Today's analysis
     alerts = analyze_day(all_data, min_vol_spike, 0)
     today_date = get_date_for_offset(all_data, 0)
+
+    # Tag alerts with earnings/sector info
+    alerts = tag_alerts(alerts, today_date)
+
     history = json.loads(DB_PATH.read_text()) if DB_PATH.exists() else {}
     history[today_date] = alerts
     DB_PATH.write_text(json.dumps(history, indent=2))

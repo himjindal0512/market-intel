@@ -88,6 +88,12 @@ tbody tr:last-child td { border-bottom: none; }
 .signal-confirming { background: rgba(52,211,153,0.1); color: var(--accent-green); border: 1px solid rgba(52,211,153,0.2); }
 .signal-selling { background: rgba(248,113,113,0.1); color: var(--accent-red); border: 1px solid rgba(248,113,113,0.2); }
 
+/* Tag pills */
+.tag-pill { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 9px; font-weight: 600; letter-spacing: 0.3px; margin-right: 3px; }
+.tag-earnings { background: rgba(183,148,244,0.15); color: var(--accent-purple); }
+.tag-sector { background: rgba(108,159,255,0.15); color: var(--accent-blue); }
+.tag-unknown { background: rgba(100,116,139,0.15); color: var(--text-muted); }
+
 /* Buy/Sell indicator */
 .buy-indicator { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; font-size: 12px; }
 .buy-dots { display: inline-flex; gap: 2px; }
@@ -265,6 +271,14 @@ function buyDots(ratio) {
     return html;
 }
 
+function renderTags(tags) {
+    if (!tags || !tags.length) return '<span class="tag-pill tag-unknown">UNKNOWN</span>';
+    return tags.map(t => {
+        const cls = t.startsWith('EARNINGS') ? 'tag-earnings' : t.startsWith('SECTOR') ? 'tag-sector' : 'tag-unknown';
+        return '<span class="tag-pill ' + cls + '">' + t + '</span>';
+    }).join('');
+}
+
 function sortItems(items, key) {
     if (currentSort.key === key) currentSort.asc = !currentSort.asc;
     else { currentSort.key = key; currentSort.asc = false; }
@@ -331,6 +345,7 @@ function renderTable(items) {
     html += '<th onclick="sortAndRender(\'buy_ratio\')">Buy/Sell' + arrow('buy_ratio') + '</th>';
     html += '<th onclick="sortAndRender(\'price_1w\')">1 Week' + arrow('price_1w') + '</th>';
     html += '<th onclick="sortAndRender(\'price_1m\')">1 Month' + arrow('price_1m') + '</th>';
+    html += '<th>Tags</th>';
     html += '</tr></thead><tbody>';
     display.forEach(a => {
         const vc = a.vol_spike > 100 ? 'positive' : a.vol_spike > 50 ? 'neutral' : 'neutral';
@@ -342,6 +357,7 @@ function renderTable(items) {
         html += '<td>' + buyDots(a.buy_ratio) + '</td>';
         html += '<td class="' + pc + '">' + (a.price_1w > 0 ? '+' : '') + a.price_1w.toFixed(1) + '%</td>';
         html += '<td class="' + pc + '">' + (a.price_1m > 0 ? '+' : '') + a.price_1m.toFixed(1) + '%</td>';
+        html += '<td>' + renderTags(a.tags) + '</td>';
         html += '</tr>';
     });
     html += '</tbody></table>';
@@ -382,7 +398,7 @@ function renderSignalsTable() {
     html += '<th onclick="sortAndRenderSignals(\'vol_spike\')">Vol Today' + arrow('vol_spike') + '</th>';
     html += '<th onclick="sortAndRenderSignals(\'avg_vol\')">Avg Vol' + arrow('avg_vol') + '</th>';
     html += '<th onclick="sortAndRenderSignals(\'buy_ratio\')">Buy/Sell' + arrow('buy_ratio') + '</th>';
-    html += '<th>Trend</th><th>Type</th>';
+    html += '<th>Trend</th><th>Type</th><th>Tags</th>';
     html += '</tr></thead><tbody>';
     display.forEach(x => {
         const trend = x.vol_spike > x.avg_vol ? '📈' : x.vol_spike < x.avg_vol * 0.7 ? '📉' : '➡️';
@@ -397,6 +413,7 @@ function renderSignalsTable() {
         html += '<td>' + buyDots(x.buy_ratio) + '</td>';
         html += '<td>' + trend + '</td>';
         html += '<td><span class="signal-tag ' + sc + '">' + label + '</span></td>';
+        html += '<td>' + renderTags(x.tags) + '</td>';
         html += '</tr>';
     });
     html += '</tbody></table>';

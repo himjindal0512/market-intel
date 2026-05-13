@@ -19,6 +19,8 @@ jobs:
           python-version: '3.11'
       - run: pip install -r requirements.txt
       - run: python volume_scan.py --backfill
+        env:
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
       - run: python build_site.py
       - name: Save results
         run: |
