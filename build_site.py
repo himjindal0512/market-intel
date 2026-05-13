@@ -54,12 +54,12 @@ def build():
         """async function loadDashboard() {
     const resp = await fetch('/api/dashboard');
     data = await resp.json();
-    renderInsights();
+    renderStats();
     showTab(document.querySelector('.tab.active'), 'signals');
 }""",
         f"""async function loadDashboard() {{
     data = {data_json};
-    renderInsights();
+    renderStats();
     showTab(document.querySelector('.tab.active'), 'signals');
 }}"""
     )
@@ -69,14 +69,14 @@ def build():
         """async function searchTicker() {
     const ticker = document.getElementById('ticker-input').value.trim().toUpperCase();
     if (!ticker) return;
-    document.getElementById('ticker-result').innerHTML = '<p class="loading">Analyzing ' + ticker + '...</p>';
+    document.getElementById('ticker-result').innerHTML = '<p class="loading">Analyzing ' + ticker + '</p>';
 
     const resp = await fetch('/api/ticker/' + ticker);
     const d = await resp.json();""",
         """async function searchTicker() {
     const ticker = document.getElementById('ticker-input').value.trim().toUpperCase();
     if (!ticker) return;
-    document.getElementById('ticker-result').innerHTML = '<p class="loading">Analyzing ' + ticker + '...</p>';
+    document.getElementById('ticker-result').innerHTML = '<p class="loading">Analyzing ' + ticker + '</p>';
 
     let d;
     try {
