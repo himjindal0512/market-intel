@@ -6,23 +6,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 :root {
-    --bg-primary: #0b0f15;
-    --bg-card: #131920;
-    --bg-elevated: #1a2230;
-    --bg-hover: #1e2a3a;
-    --border: #1e2a36;
-    --border-light: #253040;
-    --text-primary: #e8edf4;
-    --text-secondary: #8b99ab;
-    --text-muted: #5a6a7e;
-    --accent-blue: #4da3ff;
+    --bg-primary: #111827;
+    --bg-card: #1e293b;
+    --bg-elevated: #273548;
+    --bg-hover: #2d3f55;
+    --border: #334155;
+    --border-light: #3f5170;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent-blue: #60a5fa;
     --accent-green: #34d399;
     --accent-red: #f87171;
-    --accent-orange: #fb923c;
+    --accent-orange: #fbbf24;
     --accent-purple: #a78bfa;
     --radius: 12px;
     --radius-sm: 8px;
-    --shadow: 0 4px 32px rgba(0,0,0,0.4);
+    --shadow: 0 4px 24px rgba(0,0,0,0.25);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; }
@@ -58,6 +58,14 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans
 .tab.active { background: var(--bg-elevated); color: var(--text-primary); box-shadow: inset 0 0 0 1px var(--border-light); }
 .tab .badge { font-size: 10px; padding: 2px 6px; border-radius: 10px; background: var(--bg-primary); color: var(--text-muted); font-weight: 600; }
 .tab.active .badge { background: var(--accent-blue); color: #fff; }
+
+/* Filters */
+.filter-bar { display: flex; gap: 6px; padding: 12px 24px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.filter-pill { padding: 5px 12px; border-radius: 20px; cursor: pointer; background: var(--bg-primary); color: var(--text-muted); border: 1px solid var(--border); font-size: 11px; font-weight: 500; transition: all 0.2s; }
+.filter-pill:hover { color: var(--text-primary); border-color: var(--border-light); }
+.filter-pill.active { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
+.filter-pill.active-green { background: var(--accent-green); color: #111; border-color: var(--accent-green); }
+.filter-pill.active-red { background: var(--accent-red); color: #fff; border-color: var(--accent-red); }
 
 /* Table */
 .table-wrap { overflow-x: auto; }
@@ -156,7 +164,7 @@ tbody tr:last-child td { border-bottom: none; }
 <div class="container">
 
 <div class="header">
-    <h1><span>📡 Market Intelligence</span></h1>
+    <h1><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="url(#grad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-5px;margin-right:8px"><defs><linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="var(--accent-blue)"/><stop offset="100%" stop-color="var(--accent-green)"/></linearGradient></defs><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>Market Intelligence</span></h1>
     <p class="subtitle">Volume-based signal detection across S&P 500</p>
     <div class="scan-date" id="scan-date">Loading...</div>
 </div>
@@ -176,6 +184,12 @@ tbody tr:last-child td { border-bottom: none; }
             <button class="tab" onclick="showTab(this,'confirming')">🟢 Breakouts <span class="badge" id="badge-confirm">0</span></button>
             <button class="tab" onclick="showTab(this,'selling')">🔴 Distribution <span class="badge" id="badge-sell">0</span></button>
         </div>
+    </div>
+    <div class="filter-bar" id="filter-bar">
+        <button class="filter-pill active" onclick="setFilter(this,'all')">All</button>
+        <button class="filter-pill" onclick="setFilter(this,'buy')">🟢 Strong Buy (4-5)</button>
+        <button class="filter-pill" onclick="setFilter(this,'neutral')">Neutral (2-3)</button>
+        <button class="filter-pill" onclick="setFilter(this,'sell')">🔴 Selling (0-1)</button>
     </div>
     <div class="table-wrap" id="dashboard">
         <p class="loading">Loading market data</p>
@@ -214,6 +228,25 @@ tbody tr:last-child td { border-bottom: none; }
 let data = {};
 let currentSort = { key: null, asc: false };
 let currentTabItems = [];
+let currentFilter = 'all';
+let allTabItems = [];
+const TABLE_LIMIT = 20;
+
+function setFilter(el, filter) {
+    document.querySelectorAll('.filter-pill').forEach(p => p.className = 'filter-pill');
+    el.classList.add('filter-pill');
+    el.classList.add(filter === 'buy' ? 'active-green' : filter === 'sell' ? 'active-red' : 'active');
+    currentFilter = filter;
+    applyFilter();
+}
+
+function applyFilter() {
+    if (currentFilter === 'all') currentTabItems = [...allTabItems];
+    else if (currentFilter === 'buy') currentTabItems = allTabItems.filter(a => parseInt(a.buy_ratio) >= 4);
+    else if (currentFilter === 'neutral') currentTabItems = allTabItems.filter(a => { const g = parseInt(a.buy_ratio); return g >= 2 && g <= 3; });
+    else if (currentFilter === 'sell') currentTabItems = allTabItems.filter(a => parseInt(a.buy_ratio) <= 1);
+    document.getElementById('dashboard').innerHTML = renderTable(currentTabItems);
+}
 
 function toggleLegend(btn) {
     btn.classList.toggle('open');
@@ -276,15 +309,21 @@ function showTab(el, tab) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
     currentSort = { key: null, asc: false };
+    currentFilter = 'all';
+    document.querySelectorAll('.filter-pill').forEach(p => p.className = 'filter-pill');
+    document.querySelector('.filter-pill').classList.add('active');
     if (tab === 'signals') { showSignals(); return; }
-    if (tab === 'early') currentTabItems = (data.alerts || []).filter(a => a.status.includes('EARLY'));
-    else if (tab === 'confirming') currentTabItems = (data.alerts || []).filter(a => a.status.includes('CONFIRMING'));
-    else if (tab === 'selling') currentTabItems = (data.alerts || []).filter(a => a.status.includes('SELLING'));
+    if (tab === 'early') allTabItems = (data.alerts || []).filter(a => a.status.includes('EARLY'));
+    else if (tab === 'confirming') allTabItems = (data.alerts || []).filter(a => a.status.includes('CONFIRMING'));
+    else if (tab === 'selling') allTabItems = (data.alerts || []).filter(a => a.status.includes('SELLING'));
+    currentTabItems = [...allTabItems];
     document.getElementById('dashboard').innerHTML = renderTable(currentTabItems);
 }
 
 function renderTable(items) {
-    if (!items.length) return '<div class="empty-state"><div class="icon">📭</div><p>No stocks in this category today</p></div>';
+    if (!items.length) return '<div class="empty-state"><div class="icon">📭</div><p>No stocks match this filter</p></div>';
+    const showAll = items._showAll;
+    const display = showAll ? items : items.slice(0, TABLE_LIMIT);
     let html = '<table><thead><tr>';
     html += '<th onclick="sortAndRender(\'ticker\')">Ticker' + arrow('ticker') + '</th>';
     html += '<th onclick="sortAndRender(\'price\')">Price' + arrow('price') + '</th>';
@@ -293,7 +332,7 @@ function renderTable(items) {
     html += '<th onclick="sortAndRender(\'price_1w\')">1 Week' + arrow('price_1w') + '</th>';
     html += '<th onclick="sortAndRender(\'price_1m\')">1 Month' + arrow('price_1m') + '</th>';
     html += '</tr></thead><tbody>';
-    items.forEach(a => {
+    display.forEach(a => {
         const vc = a.vol_spike > 100 ? 'positive' : a.vol_spike > 50 ? 'neutral' : 'neutral';
         const pc = a.price_1w > 0 ? 'positive' : a.price_1w < 0 ? 'negative' : 'neutral';
         html += '<tr onclick="lookup(\'' + a.ticker + '\')">';
@@ -306,7 +345,15 @@ function renderTable(items) {
         html += '</tr>';
     });
     html += '</tbody></table>';
+    if (!showAll && items.length > TABLE_LIMIT) {
+        html += '<div style="text-align:center;padding:14px"><button onclick="expandTable()" style="background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-secondary);padding:8px 20px;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;font-weight:500;transition:all 0.2s">Show all ' + items.length + ' results</button></div>';
+    }
     return html;
+}
+
+function expandTable() {
+    currentTabItems._showAll = true;
+    document.getElementById('dashboard').innerHTML = renderTable(currentTabItems);
 }
 
 function sortAndRender(key) {
