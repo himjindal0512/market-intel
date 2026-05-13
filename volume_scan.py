@@ -348,10 +348,12 @@ def tag_alerts(alerts: list[dict], scan_date: str) -> list[dict]:
             except Exception:
                 pass
 
-        # Sector tag: 5+ tickers from same sector in alerts
+        # Sector tag: always show sector; highlight if 5+ tickers from same sector
         sec = sectors.get(ticker, "")
-        if sec and sector_counts.get(sec, 0) >= 5:
-            tags.append(f"SECTOR ({sec})")
+        if sec:
+            tags.append(sec)
+            if sector_counts.get(sec, 0) >= 5:
+                tags.append("SECTOR MOVE")
 
         a["tags"] = tags if tags else ["UNKNOWN"]
         a["sector"] = sec
