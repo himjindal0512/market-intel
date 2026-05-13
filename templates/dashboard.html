@@ -90,10 +90,13 @@ tbody tr:last-child td { border-bottom: none; }
 
 /* Tag pills */
 .tag-pill { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 9px; font-weight: 600; letter-spacing: 0.3px; margin-right: 3px; }
-.tag-earnings { background: rgba(183,148,244,0.15); color: var(--accent-purple); }
-.tag-sector { background: rgba(108,159,255,0.15); color: var(--accent-blue); }
-.tag-sector-move { background: rgba(108,159,255,0.25); color: var(--accent-blue); border: 1px solid rgba(108,159,255,0.3); }
-.tag-unknown { background: rgba(100,116,139,0.15); color: var(--text-muted); }
+.tag-earnings { background: rgba(191,95,255,0.15); color: var(--accent-purple); }
+.tag-sector { background: rgba(34,204,238,0.12); color: var(--accent-blue); }
+.tag-sector-move { background: rgba(34,204,238,0.25); color: var(--accent-blue); border: 1px solid rgba(34,204,238,0.3); }
+.tag-analyst { background: rgba(255,170,0,0.15); color: var(--accent-orange); }
+.tag-ma { background: rgba(255,68,119,0.15); color: var(--accent-red); }
+.tag-dividend { background: rgba(0,232,122,0.15); color: var(--accent-green); }
+.tag-unknown { background: rgba(85,85,112,0.15); color: var(--text-muted); }
 
 /* Buy/Sell indicator */
 .buy-indicator { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; font-size: 12px; }
@@ -277,7 +280,11 @@ function renderTags(tags) {
     return tags.map(t => {
         let cls = 'tag-unknown';
         if (t.startsWith('EARNINGS')) cls = 'tag-earnings';
+        else if (t.startsWith('ANALYST')) cls = 'tag-analyst';
+        else if (t === 'M&A') cls = 'tag-ma';
+        else if (t === 'DIVIDEND') cls = 'tag-dividend';
         else if (t === 'SECTOR MOVE') cls = 'tag-sector-move';
+        else if (t === 'Unknown Catalyst' || t === 'UNKNOWN') cls = 'tag-unknown';
         else if (t !== 'UNKNOWN') cls = 'tag-sector';
         return '<span class="tag-pill ' + cls + '">' + t + '</span>';
     }).join('');

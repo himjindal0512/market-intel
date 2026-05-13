@@ -313,6 +313,79 @@ def get_sector_map() -> dict:
         return {}
 
 
+def get_analyst_ratings(tickers: list[str]) -> dict:
+    """Fetch recent upgrade/downgrade for alert tickers. Returns {ticker: count_in_7d}."""
+    api_key = os.environ.get("FINNHUB_API_KEY", "")
+    if not api_key:
+        return {}
+    import urllib.request
+    today = datetime.now()
+    from_date = (today - timedelta(days=7)).strftime("%Y-%m-%d")
+    to_date = today.strftime("%Y-%m-%d")
+    results = {}
+    for ticker in tickers:
+        try:
+            url = f"https://finnhub.io/api/v1/stock/upgrade-downgrade?symbol={ticker}&from={from_date}&to={to_date}&token={api_key}"
+            with urllib.request.urlopen(url, timeout=10) as resp:
+                data = json.loads(resp.read())
+            if len(data) >= 3:
+                results[ticker] = len(data)
+            time.sleep(1.1)  # Rate limit: 60/min
+        except Exception:
+            continue
+    return results
+
+
+def get_ma_targets() -> set:
+    """Search SEC EDGAR for recent M&A filings. Returns set of tickers mentioned."""
+    try:
+        import urllib.request
+        keywords = ["acquisition", "merger", "buyout", "tender offer", "take private"]
+        tickers_found = set()
+        for kw in keywords:
+            url = f"https://efts.sec.gov/LATEST/search-index?q=%22{kw.replace(' ', '%20')}%22&dateRange=custom&startdt={(datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')}&enddt={datetime.now().strftime('%Y-%m-%d')}&forms=8-K,SC%20TO-T,SC%2013D"
+            req = urllib.request.Request(url, headers={"User-Agent": "MarketIntel/1.0 research@example.com"})
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                data = json.loads(resp.read())
+            for hit in data.get("hits", {}).get("hits", []):
+                # Extract ticker from filing if available
+                ticker = hit.get("_source", {}).get("tickers", "")
+                if ticker:
+                    for t in ticker.split(","):
+                        t = t.strip().upper()
+                        if t:
+                            tickers_found.add(t)
+        return tickers_found
+    except Exception:
+        return set()
+
+
+def get_dividend_splits(tickers: list[str]) -> dict:
+    """Check Finnhub for upcoming dividends/splits. Returns {ticker: event_type}."""
+    api_key = os.environ.get("FINNHUB_API_KEY", "")
+    if not api_key:
+        return {}
+    import urllib.request
+    today = datetime.now()
+    from_date = (today - timedelta(days=5)).strftime("%Y-%m-%d")
+    to_date = (today + timedelta(days=5)).strftime("%Y-%m-%d")
+    results = {}
+    # Batch dividend calendar (single call)
+    try:
+        url = f"https://finnhub.io/api/v1/calendar/ipo?from={from_date}&to={to_date}&token={api_key}"
+        # Use stock/dividend2 for individual tickers in alerts only
+        for ticker in tickers:
+            url = f"https://finnhub.io/api/v1/stock/dividend2?symbol={ticker}&from={from_date}&to={to_date}&token={api_key}"
+            with urllib.request.urlopen(url, timeout=10) as resp:
+                data = json.loads(resp.read())
+            if data:
+                results[ticker] = "DIVIDEND"
+            time.sleep(1.1)  # Rate limit
+    except Exception:
+        pass
+    return results
+
+
 def tag_alerts(alerts: list[dict], scan_date: str) -> list[dict]:
     """Add tags to alerts: EARNINGS, SECTOR, or UNKNOWN."""
     if not alerts:
@@ -323,6 +396,19 @@ def tag_alerts(alerts: list[dict], scan_date: str) -> list[dict]:
 
     # Get sector map
     sectors = get_sector_map()
+
+    # Get analyst ratings (only for tickers in alerts)
+    alert_tickers = [a["ticker"] for a in alerts]
+    print("  🏷️  Fetching analyst ratings...")
+    analyst = get_analyst_ratings(alert_tickers)
+
+    # Get M&A targets from EDGAR
+    print("  🏷️  Checking SEC EDGAR for M&A...")
+    ma_targets = get_ma_targets()
+
+    # Get dividend/split info
+    print("  🏷️  Checking dividends/splits...")
+    dividends = get_dividend_splits(alert_tickers)
 
     # Count sectors in today's alerts for sector clustering
     sector_counts = {}
@@ -348,6 +434,18 @@ def tag_alerts(alerts: list[dict], scan_date: str) -> list[dict]:
             except Exception:
                 pass
 
+        # Analyst tag: 3+ rating changes in 7 days
+        if ticker in analyst:
+            tags.append(f"ANALYST ({analyst[ticker]} ratings)")
+
+        # M&A tag
+        if ticker in ma_targets:
+            tags.append("M&A")
+
+        # Dividend/Split tag
+        if ticker in dividends:
+            tags.append(dividends[ticker])
+
         # Sector tag: always show sector; highlight if 5+ tickers from same sector
         sec = sectors.get(ticker, "")
         if sec:
@@ -355,11 +453,16 @@ def tag_alerts(alerts: list[dict], scan_date: str) -> list[dict]:
             if sector_counts.get(sec, 0) >= 5:
                 tags.append("SECTOR MOVE")
 
+        # If only sector tag, add "Unknown Catalyst"
+        has_catalyst = any(not t == sec and t != "SECTOR MOVE" for t in tags)
+        if not has_catalyst:
+            tags.append("Unknown Catalyst")
+
         a["tags"] = tags if tags else ["UNKNOWN"]
         a["sector"] = sec
 
     tagged_count = sum(1 for a in alerts if a["tags"] != ["UNKNOWN"])
-    print(f"  🏷️  Tagged {tagged_count}/{len(alerts)} alerts (earnings: {len(earnings)} dates loaded)")
+    print(f"  🏷️  Tagged {tagged_count}/{len(alerts)} alerts | Analyst: {len(analyst)} | M&A: {len(ma_targets)} | Dividends: {len(dividends)}")
     return alerts
 
 
