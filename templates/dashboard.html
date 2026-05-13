@@ -97,6 +97,7 @@ tbody tr:last-child td { border-bottom: none; }
 .tag-ma { background: rgba(255,68,119,0.15); color: var(--accent-red); }
 .tag-dividend { background: rgba(0,232,122,0.15); color: var(--accent-green); }
 .tag-unknown { background: rgba(85,85,112,0.15); color: var(--text-muted); }
+.tag-gem { background: rgba(0,232,122,0.2); color: var(--accent-green); border: 1px solid rgba(0,232,122,0.4); font-weight: 700; }
 
 /* Buy/Sell indicator */
 .buy-indicator { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; font-size: 12px; }
@@ -279,7 +280,8 @@ function renderTags(tags) {
     if (!tags || !tags.length) return '<span class="tag-pill tag-unknown">UNKNOWN</span>';
     return tags.map(t => {
         let cls = 'tag-unknown';
-        if (t.startsWith('EARNINGS')) cls = 'tag-earnings';
+        if (t.includes('GEM')) cls = 'tag-gem';
+        else if (t.startsWith('EARNINGS')) cls = 'tag-earnings';
         else if (t.startsWith('ANALYST')) cls = 'tag-analyst';
         else if (t === 'M&A') cls = 'tag-ma';
         else if (t === 'DIVIDEND') cls = 'tag-dividend';

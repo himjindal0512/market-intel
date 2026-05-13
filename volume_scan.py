@@ -295,6 +295,22 @@ def get_earnings_dates() -> dict:
         return {}
 
 
+def get_earnings_from_yfinance(tickers: list[str]) -> dict:
+    """Fallback: get earnings dates from Yahoo Finance for tickers not in Finnhub."""
+    earnings = {}
+    for ticker in tickers:
+        try:
+            t = yf.Ticker(ticker)
+            cal = t.calendar
+            if cal is not None and not cal.empty:
+                date = cal.iloc[0, 0] if hasattr(cal, 'iloc') else None
+                if date:
+                    earnings[ticker] = str(date)[:10]
+        except Exception:
+            continue
+    return earnings
+
+
 def get_sector_map() -> dict:
     """Get GICS sector for each S&P 500 ticker from the CSV source."""
     try:
@@ -394,11 +410,17 @@ def tag_alerts(alerts: list[dict], scan_date: str) -> list[dict]:
     # Fetch earnings calendar
     earnings = get_earnings_dates()
 
+    # Fallback: check Yahoo Finance for tickers not in Finnhub
+    alert_tickers = [a["ticker"] for a in alerts]
+    missing = [t for t in alert_tickers if t not in earnings]
+    if missing:
+        yf_earnings = get_earnings_from_yfinance(missing[:30])  # Limit to avoid slowness
+        earnings.update(yf_earnings)
+
     # Get sector map
     sectors = get_sector_map()
 
     # Get analyst ratings (only for tickers in alerts)
-    alert_tickers = [a["ticker"] for a in alerts]
     print("  🏷️  Fetching analyst ratings...")
     analyst = get_analyst_ratings(alert_tickers)
 
@@ -462,7 +484,35 @@ def tag_alerts(alerts: list[dict], scan_date: str) -> list[dict]:
         a["sector"] = sec
 
     tagged_count = sum(1 for a in alerts if a["tags"] != ["UNKNOWN"])
-    print(f"  🏷️  Tagged {tagged_count}/{len(alerts)} alerts | Analyst: {len(analyst)} | M&A: {len(ma_targets)} | Dividends: {len(dividends)}")
+
+    # Gem scoring
+    for a in alerts:
+        score = 0
+        if "EARLY" in a["status"]:
+            score += 2
+        buy = int(a.get("buy_ratio", "0")[0])
+        if buy >= 4:
+            score += 3
+        elif buy >= 3:
+            score += 1
+        if a["vol_spike"] >= 100:
+            score += 2
+        elif a["vol_spike"] >= 50:
+            score += 1
+        if "Unknown Catalyst" in a.get("tags", []):
+            score += 2
+        if any(t.startswith("EARNINGS") for t in a.get("tags", [])):
+            score -= 3
+        if "SECTOR MOVE" in a.get("tags", []):
+            score -= 1
+        if buy <= 1:
+            score -= 3
+        a["gem_score"] = score
+        if score >= 7:
+            a["tags"].insert(0, "💎 GEM")
+
+    gem_count = sum(1 for a in alerts if a.get("gem_score", 0) >= 7)
+    print(f"  🏷️  Tagged {tagged_count}/{len(alerts)} alerts | 💎 Gems: {gem_count} | Analyst: {len(analyst)} | M&A: {len(ma_targets)} | Dividends: {len(dividends)}")
     return alerts
 
 
