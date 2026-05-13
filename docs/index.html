@@ -99,6 +99,16 @@ tbody tr:last-child td { border-bottom: none; }
 .tag-unknown { background: rgba(85,85,112,0.15); color: var(--text-muted); }
 .tag-gem { background: rgba(0,232,122,0.2); color: var(--accent-green); border: 1px solid rgba(0,232,122,0.4); font-weight: 700; }
 
+/* Sector Flow */
+.flow-section h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; font-weight: 600; }
+.flow-section.inflow h4 { color: var(--accent-green); }
+.flow-section.outflow h4 { color: var(--accent-red); }
+.flow-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; color: var(--text-secondary); }
+.flow-row .sector-name { font-weight: 500; }
+.flow-row .flow-count { font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+.flow-row.inflow .flow-count { background: rgba(0,232,122,0.1); color: var(--accent-green); }
+.flow-row.outflow .flow-count { background: rgba(255,68,119,0.1); color: var(--accent-red); }
+
 /* Buy/Sell indicator */
 .buy-indicator { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; font-size: 12px; }
 .buy-dots { display: inline-flex; gap: 2px; }
@@ -185,6 +195,13 @@ tbody tr:last-child td { border-bottom: none; }
     <div class="stat-card orange"><div class="stat-label">Accumulation</div><div class="stat-value" id="stat-early">—</div><div class="stat-sub">volume up, price flat</div></div>
     <div class="stat-card green"><div class="stat-label">Breakouts</div><div class="stat-value" id="stat-confirm">—</div><div class="stat-sub">confirmed moves</div></div>
     <div class="stat-card red"><div class="stat-label">Distribution</div><div class="stat-value" id="stat-sell">—</div><div class="stat-sub">institutions exiting</div></div>
+</div>
+
+<div class="main-card" style="margin-bottom:24px;padding:20px 24px;" id="sector-flow-card">
+    <h3 style="font-size:14px;font-weight:600;margin-bottom:14px;color:var(--text-primary)">💰 Sector Money Flow</h3>
+    <div id="sector-flow" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:12px;">
+        <p class="loading">Calculating...</p>
+    </div>
 </div>
 
 <div class="main-card">
@@ -330,6 +347,49 @@ function renderStats() {
     document.getElementById('badge-early').textContent = early.length;
     document.getElementById('badge-confirm').textContent = confirm.length;
     document.getElementById('badge-sell').textContent = sell.length;
+    renderSectorFlow();
+}
+
+function renderSectorFlow() {
+    const alerts = data.alerts || [];
+    const sectors = {};
+    alerts.forEach(a => {
+        const sec = a.sector || '';
+        if (!sec) return;
+        if (!sectors[sec]) sectors[sec] = { buy: 0, sell: 0, total: 0 };
+        sectors[sec].total++;
+        const buyRatio = parseInt(a.buy_ratio) || 0;
+        if (a.status.includes('CONFIRMING') && buyRatio >= 3) sectors[sec].buy++;
+        else if (a.status.includes('SELLING') || buyRatio <= 1) sectors[sec].sell++;
+    });
+
+    // Only show sectors with 2+ tickers
+    const inflows = Object.entries(sectors)
+        .filter(([,v]) => v.buy >= 2)
+        .sort((a,b) => b[1].buy - a[1].buy)
+        .slice(0, 5);
+    const outflows = Object.entries(sectors)
+        .filter(([,v]) => v.sell >= 2)
+        .sort((a,b) => b[1].sell - a[1].sell)
+        .slice(0, 5);
+
+    let html = '<div class="flow-section inflow"><h4>▲ Money Flowing In</h4>';
+    if (inflows.length) {
+        inflows.forEach(([name, v]) => {
+            html += '<div class="flow-row inflow"><span class="sector-name">' + name + '</span><span class="flow-count">' + v.buy + ' stocks</span></div>';
+        });
+    } else { html += '<div class="flow-row">No clear inflows today</div>'; }
+    html += '</div>';
+
+    html += '<div class="flow-section outflow"><h4>▼ Money Flowing Out</h4>';
+    if (outflows.length) {
+        outflows.forEach(([name, v]) => {
+            html += '<div class="flow-row outflow"><span class="sector-name">' + name + '</span><span class="flow-count">' + v.sell + ' stocks</span></div>';
+        });
+    } else { html += '<div class="flow-row">No clear outflows today</div>'; }
+    html += '</div>';
+
+    document.getElementById('sector-flow').innerHTML = html;
 }
 
 function showTab(el, tab) {
