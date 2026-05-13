@@ -87,14 +87,17 @@ def download_batch(tickers: list[str]) -> dict:
                 if len(tickers) == 1:
                     close = data["Close"]
                     volume = data["Volume"]
+                    open_ = data["Open"]
                 else:
                     close = data["Close"][ticker]
                     volume = data["Volume"][ticker]
+                    open_ = data["Open"][ticker]
                 close = close.dropna()
                 volume = volume.dropna()
+                open_ = open_.dropna()
                 if len(close) < 22 or len(volume) < 22:
                     continue
-                results[ticker] = {"close": close, "volume": volume}
+                results[ticker] = {"close": close, "volume": volume, "open": open_}
             except Exception:
                 continue
     except Exception:
@@ -108,6 +111,7 @@ def analyze_day(all_data: dict, min_vol_spike: float, day_offset: int) -> list[d
     for ticker, data in all_data.items():
         close = data["close"]
         volume = data["volume"]
+        open_ = data["open"]
 
         end_idx = len(close) - day_offset
         if end_idx < 22:
@@ -125,6 +129,11 @@ def analyze_day(all_data: dict, min_vol_spike: float, day_offset: int) -> list[d
         price_1w = (close.iloc[end_idx-1] / close.iloc[end_idx-6] - 1) * 100
         price_1m = (close.iloc[end_idx-1] / close.iloc[end_idx-22] - 1) * 100
 
+        # Estimated buy ratio: green days (close > open) in last 5 days
+        green_days = sum(1 for i in range(end_idx-5, end_idx)
+                        if i < len(close) and i < len(open_) and close.iloc[i] > open_.iloc[i])
+        buy_ratio = f"{green_days}/5"
+
         if abs(price_1w) < 5:
             status = "🟡 EARLY"
         elif price_1w > 5:
@@ -138,6 +147,7 @@ def analyze_day(all_data: dict, min_vol_spike: float, day_offset: int) -> list[d
             "vol_spike": round(vol_spike, 1),
             "price_1w": round(price_1w, 1),
             "price_1m": round(price_1m, 1),
+            "buy_ratio": buy_ratio,
             "status": status,
         })
 

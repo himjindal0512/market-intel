@@ -72,6 +72,7 @@ def api_ticker(ticker):
 
         close = hist["Close"]
         volume = hist["Volume"]
+        open_ = hist["Open"]
 
         price = float(close.iloc[-1])
         price_1w = (close.iloc[-1] / close.iloc[-6] - 1) * 100
@@ -81,6 +82,10 @@ def api_ticker(ticker):
         vol_prior = volume.iloc[-21:-5].mean()
         vol_spike = (vol_recent / max(vol_prior, 1) - 1) * 100
         avg_volume = volume.iloc[-21:].mean()
+
+        # Estimated buy ratio: green days (close > open) in last 5 days
+        green_days = sum(1 for i in range(-5, 0) if close.iloc[i] > open_.iloc[i])
+        buy_ratio = f"{green_days}/5"
 
         daily_volume = []
         avg_21 = volume.iloc[-21:].mean()
@@ -104,6 +109,7 @@ def api_ticker(ticker):
             "vol_spike": round(float(vol_spike), 1),
             "avg_volume": round(float(avg_volume), 0),
             "daily_volume": daily_volume,
+            "buy_ratio": buy_ratio,
             "signal": signal,
         })
     except Exception as e:

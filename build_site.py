@@ -86,12 +86,14 @@ def build():
         const result = raw.chart.result[0];
         const closes = result.indicators.quote[0].close;
         const volumes = result.indicators.quote[0].volume;
+        const opens = result.indicators.quote[0].open;
         const timestamps = result.timestamp;
 
         // Filter nulls
-        const validIdx = closes.map((c,i) => c !== null && volumes[i] !== null ? i : -1).filter(i => i >= 0);
+        const validIdx = closes.map((c,i) => c !== null && volumes[i] !== null && opens[i] !== null ? i : -1).filter(i => i >= 0);
         const c = validIdx.map(i => closes[i]);
         const v = validIdx.map(i => volumes[i]);
+        const o = validIdx.map(i => opens[i]);
         const ts = validIdx.map(i => timestamps[i]);
 
         if (c.length < 22) throw new Error('Not enough data');
@@ -111,7 +113,7 @@ def build():
             daily_volume.push({ date: (date.getMonth()+1) + '/' + date.getDate(), ratio: Math.round((v[idx] / Math.max(avg_volume,1)) * 100) / 100 });
         }
 
-        d = { ticker, price, price_1w, price_1m, vol_spike, avg_volume, daily_volume, signal: Math.abs(price_1w) < 5 ? 'EARLY' : price_1w > 5 ? 'CONFIRMING' : 'SELLING' };
+        d = { ticker, price, price_1w, price_1m, vol_spike, avg_volume, daily_volume, buy_ratio: (c.slice(-5).filter((cl,i) => cl > o.slice(-5)[i]).length) + '/5', signal: Math.abs(price_1w) < 5 ? 'EARLY' : price_1w > 5 ? 'CONFIRMING' : 'SELLING' };
     } catch(e) {
         d = { error: 'Could not fetch data for ' + ticker + '. Try again in a moment.' };
     }"""

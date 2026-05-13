@@ -200,6 +200,7 @@ function renderTable(items) {
     html += '<th onclick="sortAndRender(\'ticker\')">Ticker' + arrow('ticker') + '</th>';
     html += '<th onclick="sortAndRender(\'price\')">Price' + arrow('price') + '</th>';
     html += '<th onclick="sortAndRender(\'vol_spike\')">Vol Spike' + arrow('vol_spike') + '</th>';
+    html += '<th onclick="sortAndRender(\'buy_ratio\')">Buy/Sell' + arrow('buy_ratio') + '</th>';
     html += '<th onclick="sortAndRender(\'price_1w\')">1W' + arrow('price_1w') + '</th>';
     html += '<th onclick="sortAndRender(\'price_1m\')">1M' + arrow('price_1m') + '</th>';
     html += '</tr>';
@@ -210,6 +211,10 @@ function renderTable(items) {
         html += '<td><strong>' + a.ticker + '</strong></td>';
         html += '<td>$' + a.price.toFixed(2) + '</td>';
         html += '<td class="' + vc + '">+' + a.vol_spike.toFixed(0) + '%</td>';
+        const br = a.buy_ratio || '—';
+        const green = parseInt(br) || 0;
+        const brc = green >= 4 ? 'positive' : green <= 1 ? 'negative' : 'neutral';
+        html += '<td class="' + brc + '">' + (green >= 4 ? '🟢 ' : green <= 1 ? '🔴 ' : '') + br + '</td>';
         html += '<td class="' + pc + '">' + (a.price_1w > 0 ? '+' : '') + a.price_1w.toFixed(1) + '%</td>';
         html += '<td class="' + pc + '">' + (a.price_1m > 0 ? '+' : '') + a.price_1m.toFixed(1) + '%</td>';
         html += '</tr>';
@@ -241,6 +246,7 @@ function renderSignalsTable() {
     html += '<th onclick="sortAndRenderSignals(\'days_seen\')">Days' + arrow('days_seen') + '</th>';
     html += '<th onclick="sortAndRenderSignals(\'vol_spike\')">Vol' + arrow('vol_spike') + '</th>';
     html += '<th onclick="sortAndRenderSignals(\'avg_vol\')">Avg' + arrow('avg_vol') + '</th>';
+    html += '<th onclick="sortAndRenderSignals(\'buy_ratio\')">Buy/Sell' + arrow('buy_ratio') + '</th>';
     html += '<th>Trend</th><th>Type</th></tr>';
     s.forEach(x => {
         const trend = x.vol_spike > x.avg_vol ? '📈' : x.vol_spike < x.avg_vol * 0.7 ? '📉' : '➡️';
@@ -252,6 +258,10 @@ function renderSignalsTable() {
         html += '<td>' + x.days_seen + '/5</td>';
         html += '<td class="positive">+' + x.vol_spike.toFixed(0) + '%</td>';
         html += '<td>+' + x.avg_vol.toFixed(0) + '%</td>';
+        const br = x.buy_ratio || '—';
+        const green = parseInt(br) || 0;
+        const brc = green >= 4 ? 'positive' : green <= 1 ? 'negative' : 'neutral';
+        html += '<td class="' + brc + '">' + (green >= 4 ? '🟢 ' : green <= 1 ? '🔴 ' : '') + br + '</td>';
         html += '<td>' + trend + '</td>';
         html += '<td><span class="signal-tag ' + sc + '">' + label + '</span></td></tr>';
     });
@@ -303,6 +313,9 @@ async function searchTicker() {
     html += '<div class="metric"><div class="metric-label">Price 1W</div><div class="metric-value ' + pc + '">' + (d.price_1w > 0 ? '+' : '') + d.price_1w.toFixed(1) + '%</div></div>';
     html += '<div class="metric"><div class="metric-label">Price 1M</div><div class="metric-value ' + pc + '">' + (d.price_1m > 0 ? '+' : '') + d.price_1m.toFixed(1) + '%</div></div>';
     html += '<div class="metric"><div class="metric-label">Avg Vol</div><div class="metric-value">' + (d.avg_volume / 1e6).toFixed(1) + 'M</div></div>';
+    const brGreen = parseInt(d.buy_ratio) || 0;
+    const brClass = brGreen >= 4 ? 'positive' : brGreen <= 1 ? 'negative' : 'neutral';
+    html += '<div class="metric"><div class="metric-label">Buy/Sell (5d)</div><div class="metric-value ' + brClass + '">' + (d.buy_ratio || '—') + '</div></div>';
     html += '</div>';
     html += '<p class="vol-chart-title">Daily Volume vs 21-day Average</p>';
     html += '<p style="font-size:11px;color:#6e7681;margin-bottom:10px;">🟠 Orange = 50%+ above normal (unusual) · 🟢 Green = above average · ⬜ Grey = normal/quiet</p>';
